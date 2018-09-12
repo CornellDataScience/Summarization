@@ -2,15 +2,15 @@
 
 Abstractive Summarization: Graph Representations and Platform Integration
 
-Text summarization has always been a compelling problem concerning natural language processing. 
-There exists two basic types of summarization: extractive and abstractive. Extractive methods 
-identify relevant pieces of sub-text, subsequently concatenating them together and dropping the 
-rest. Abstractive summarization on the other hand requires the machine to reason at a high level 
-to generate an entirely new output summary.
+Text summarization has always been a compelling problem concerning natural language processing 
+and machine learning. There exist two basic types of summarization: extractive and abstractive. 
+Extractive methods identify relevant pieces of sub-text, subsequently concatenating them together
+and dropping the rest. Abstractive summarization on the other hand requires the machine to reason 
+at a high level to generate an entirely new output summary.
 
 Related to summarization is the concept of knowledge graphs. These are labeled graphs 
-where the nodes can be ideas, concepts, people, etc., and the edges describe relationships 
-between nodes. These graphs can be queried for QA systems or be used to build up summaries, 
+where nodes can represent ideas, concepts, people, etc., and edges describe relationships 
+between nodes. These graphs can be queried for Q&A systems or be used to build up summaries, 
 and in general are a form of memory that can be leveraged in all types of systems.
 
 Our goals for this project are to:
