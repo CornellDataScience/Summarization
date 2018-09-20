@@ -9,17 +9,20 @@ import spacy
 import numpy as np
 import en_core_web_sm
 import networkx as nx
-from spacy.attrs import POS, LEMMA
+from spacy.attrs import POS, LEMMA, IS_STOP
+from spacy.lang.en.stop_words import STOP_WORDS
 
 
-def get_nodes(doc_arr, POS_tags=[83, 91, 95]):#Adjective, Noun, Proper noun
-    """Returns the unique lemma hashes of tokens with a part of speech in POS_tags"""
+def get_lemma_nodes(doc_arr, POS_tags=[83, 91, 95]):#Adjective, Noun, Proper noun
+    """Returns the unique lemma hashes of tokens with a part of speech in POS_tags
+    and that aren't stop words"""
     tokens_of_POS = doc_arr[np.isin(doc_arr[:,1],POS_tags)]
-    nodes = np.unique(tokens_of_POS[:,0])
+    tokens_wo_stopwords = tokens_of_POS[tokens_of_POS[:,2] == 0]
+    nodes = np.unique(tokens_wo_stopwords[:,0])
     return nodes
 
 
-def generate_edge_weights(nodes, doc, n=6):
+def generate_keyword_edge_weights(nodes, doc, n=6):
     """Returns the cooccurence weights of each given node.
     Scores are weighted such that the closer the word is the higher the score
     and are constrained to be within [n] tokens of eachother.
@@ -38,13 +41,13 @@ def generate_edge_weights(nodes, doc, n=6):
     return co_occur_weights
 
 
-def construct_graph(doc):
+def construct_lemma_graph(doc):
     '''Returns the graph used to calculate pagerank on.
     doc : spaCy Doc object
     returns: networkx Graph'''
-    doc_arr = doc.to_array([LEMMA, POS])
-    nodes = get_nodes(doc_arr)
-    edge_weights = generate_edge_weights(nodes, doc)
+    doc_arr = doc.to_array([LEMMA, POS, IS_STOP])
+    nodes = get_lemma_nodes(doc_arr)
+    edge_weights = generate_keyword_edge_weights(nodes, doc)
 
     G = nx.Graph()
     G.add_nodes_from(nodes)
@@ -59,10 +62,11 @@ def keyword_extraction(text, n_words):
     '''Returns the most significant [n_words] as determined by the textrank algorithm.'''
     nlp = en_core_web_sm.load()
     doc = nlp(text)
-    G = construct_graph(doc)
+    G = construct_lemma_graph(doc)
     pr = nx.pagerank_numpy(G)
     top_ranked = sorted(list(pr.items()), key=lambda x: x[1],reverse=True)[:5]
     return [doc.vocab.strings[node[0]] for node in top_ranked]
+
 
 if __name__ == '__main__':
     test_text = """There is a large body of work in extractive text summarization, due to its easier nature. Perhaps the most famous approach is called textrank which is an adaptation of the pagerank algorithm that is used to identify the most important sentences in a text. Work in abstractive text summarization has increased recently due to the rise of deep learning and its success in text generation as well as some success in reading comprehension.
