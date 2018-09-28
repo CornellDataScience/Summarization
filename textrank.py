@@ -14,6 +14,7 @@ import tensorflow_hub as hub
 from spacy.attrs import POS, LEMMA, IS_STOP
 from sklearn.metrics.pairwise import cosine_similarity
 
+nlp = en_core_web_sm.load()
 
 ####################### KEYWORD EXTRACTION #######################################
 def get_lemma_nodes(doc_arr, POS_tags=[83, 91, 95]):#Adjective, Noun, Proper noun
@@ -21,7 +22,7 @@ def get_lemma_nodes(doc_arr, POS_tags=[83, 91, 95]):#Adjective, Noun, Proper nou
     and that aren't stop words"""
     tokens_of_POS = doc_arr[np.isin(doc_arr[:,1],POS_tags)]
     tokens_wo_stopwords = tokens_of_POS[tokens_of_POS[:,2] == 0]
-    nodes = np.unique(tokens_wo_stopwords[:,0])
+    nodes = np.unique(tokens_wo_stopwords)
     return nodes
 
 
@@ -63,7 +64,6 @@ def construct_lemma_graph(doc):
 
 def keyword_extraction(text, n_words):
     '''Returns the most significant [n_words] as determined by the textrank algorithm.'''
-    nlp = en_core_web_sm.load()
     doc = nlp(text)
     G = construct_lemma_graph(doc)
     pr = nx.pagerank_numpy(G)
@@ -116,7 +116,6 @@ def summarize(text, n_sentences):
     '''Returns the [n_sentences] from [text] that had the highest pagerank score.
     text: string
     n_sentences: int '''
-    nlp = en_core_web_sm.load()
     doc = nlp(text)
     sens = [sen.text for sen in list(doc.sents)]
     G = construct_sentence_graph(sens)
@@ -126,9 +125,27 @@ def summarize(text, n_sentences):
     return [sens[node[0]] for node in ordered_sens]
 
 
+def get_summary(text):
+    """
+    Generate and return summary from text based off of how many sentences it contains, 
+    to be called outside of module
+    """
+    num_words = text.count(" ")
+    num_sentences = text.count(".")
+    keywords = keyword_extraction(test_text, 5)
+    summary = summarize(text, max(1, num_sentences//10))[0]
+    return keywords, summary
+
 
 if __name__ == '__main__':
     test_text = """There is a large body of work in extractive text summarization, due to its easier nature. Perhaps the most famous approach is called textrank which is an adaptation of the pagerank algorithm that is used to identify the most important sentences in a text. Work in abstractive text summarization has increased recently due to the rise of deep learning and its success in text generation as well as some success in reading comprehension.
 	Knowledge graphs have also been around for some time now, with Google having a large knowledge graph of over 70 billion nodes. Recent advances in this area have been in generating these graphs directly from unstructured text. Deep learning again has provided some tools that have been helpful in progressing the constructing of these graphs.
 	At the intersection of knowledge graphs and summarization is an area that is sometimes called information cartography. The graphs generated in this area are much less granular than knowledge graphs, and instead read more like summaries. Additionally, the nodes are events or concepts and instead of edges being labeled, paths are labeled, with some sort of story line that ties the nodes in that path together. These objects are more useful for summarizing bigger more complex subjects with a significant amount of text material."""
-    print(keyword_extraction(test_text, 5))
+    
+    info = get_summary(test_text)
+
+    print("##########EXTRACTING KEYWORDS############")
+    print(info[0])
+
+    print("##########GENERATING SUMMARY############")
+    print(info[1])
