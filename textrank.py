@@ -132,15 +132,14 @@ def get_summary(text):
     """
     num_words = text.count(" ")
     num_sentences = text.count(".")
-    keywords = keyword_extraction(test_text, 5)
+    keywords = keyword_extraction(text, 5)
     summary = summarize(text, max(1, num_sentences//10))[0]
     return keywords, summary
 
 
 if __name__ == '__main__':
-    test_text = """There is a large body of work in extractive text summarization, due to its easier nature. Perhaps the most famous approach is called textrank which is an adaptation of the pagerank algorithm that is used to identify the most important sentences in a text. Work in abstractive text summarization has increased recently due to the rise of deep learning and its success in text generation as well as some success in reading comprehension.
-	Knowledge graphs have also been around for some time now, with Google having a large knowledge graph of over 70 billion nodes. Recent advances in this area have been in generating these graphs directly from unstructured text. Deep learning again has provided some tools that have been helpful in progressing the constructing of these graphs.
-	At the intersection of knowledge graphs and summarization is an area that is sometimes called information cartography. The graphs generated in this area are much less granular than knowledge graphs, and instead read more like summaries. Additionally, the nodes are events or concepts and instead of edges being labeled, paths are labeled, with some sort of story line that ties the nodes in that path together. These objects are more useful for summarizing bigger more complex subjects with a significant amount of text material."""
+    print("enter text below:")
+    test_text = input()
     
     info = get_summary(test_text)
 
