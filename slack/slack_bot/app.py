@@ -1,7 +1,7 @@
 # -*- coding : utf-8 -*- 
 import requests
 import json
-import bot
+from . import bot
 from flask import Flask, request, make_response, render_template
 
 pyBot = bot.Bot()

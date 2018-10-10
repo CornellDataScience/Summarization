@@ -133,18 +133,18 @@ def get_summary(text):
     num_words = text.count(" ")
     num_sentences = text.count(".")
     keywords = keyword_extraction(text, 5)
-    summary = summarize(text, max(1, num_sentences//10))[0]
-    return keywords, summary
+#    summary = summarize(text, max(1, num_sentences//10))[0]
+    return keywords, None
 
 
 if __name__ == '__main__':
     print("enter text below:")
     test_text = input()
-    
+    print("ok")
     info = get_summary(test_text)
 
     print("##########EXTRACTING KEYWORDS############")
-    print(info[0])
+    print(info)
 
-    print("##########GENERATING SUMMARY############")
-    print(info[1])
+#    print("##########GENERATING SUMMARY############")
+#    print(info[1])

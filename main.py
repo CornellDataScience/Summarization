@@ -1,11 +1,13 @@
 import slack.slack_bot
-import slack.slack_bot.app 
-import textrank
+import slack.slack_bot.app as app 
+from textrank import get_summary
 
 def process_text(text):
-  info = get_summary(text)
-  return "Keywords: " + info[0].join(",") + "\nSummary: " + info[1]
+    info = get_summary(text)
+    return "Keywords: " + ",".join(info[0]) + "\nSummary: too slow to show..." 
 
-if __name__ == '__main__':
-  app.run(debug=True)
+app.process_text = process_text
+
+if __name__ == '__main__':  
+    app.app.run(debug=True)
 
