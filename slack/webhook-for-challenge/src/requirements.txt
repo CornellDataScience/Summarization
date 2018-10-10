@@ -1,7 +1,6 @@
 alembic==0.9.6
 appdirs==1.4.3
 autoenv==1.0.0
-certifi==2017.7.27.1
 chardet==3.0.4
 click==6.7
 Flask >= 0.12.3
@@ -10,7 +9,7 @@ Flask-Script==2.0.6
 Flask-SQLAlchemy==2.3.2
 idna==2.6
 itsdangerous==0.24
-Jinja2==2.9.6
+Jinja2==2.10
 Mako==1.0.7
 MarkupSafe==1.0
 marshmallow==2.13.6
@@ -24,6 +23,6 @@ six==1.10.0
 SQLAlchemy==1.1.14
 termcolor==1.1.0
 urllib3==1.22
-Werkzeug==0.12.2
+Werkzeug==0.14
 simplejson==3.13.2
 gunicorn >= 19.5.0

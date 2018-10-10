@@ -1,4 +1,5 @@
-import slack.slack_bot.app
+import slack.slack_bot
+import slack.slack_bot.app 
 import textrank
 
 def process_text(text):
