@@ -1,7 +1,7 @@
 # -*- coding : utf-8 -*- 
 import requests
 import json
-import bot
+from . import bot
 from flask import Flask, request, make_response, render_template
 
 pyBot = bot.Bot()
@@ -10,7 +10,7 @@ slack = pyBot.client
 app = Flask(__name__)
 
 def process_text(text): 
-    return "Summary for " + text
+    return "It is better to have a summary for this ... "
 
 def _event_handler(event_type, slack_event):
     """
@@ -47,7 +47,7 @@ def _event_handler(event_type, slack_event):
         print(str(slack_event))
         user = slack_event["event"].get("user")
         message = slack_event["event"]
-        if ("text" in message and len(message["text"].split()) > 50):
+        if ((not "bot_id" in message) and "text" in message and len(message["text"].split()) > 50):
             ts = message.get("ts")
             update_ts = str(float(message.get("ts")) + 0.0000001)
             # update, fail authentification...

@@ -1,0 +1,11 @@
+[Unit]
+Description=upstart
+
+[Service]
+User=root
+Group=nogroup
+WorkingDirectory={{ repository_path }}
+ExecStart=/usr/local/bin/gunicorn app:app --bind=127.0.0.1:5000 --workers 3 --user=root --log-level=debug
+
+[Install]
+WantedBy=multi-user.target

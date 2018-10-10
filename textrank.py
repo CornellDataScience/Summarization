@@ -66,9 +66,7 @@ def get_summary(text, numSentences=1):
     return summary
 
 if __name__ == "__main__":
-    print("Input text here:")
+    print("###########Input text here:############")
     text = input()
-    print("###############################")
-    print("###############################")
-    print("Generated Summary:")
+    print("#########Generated Summary:############")
     get_summary(text)
