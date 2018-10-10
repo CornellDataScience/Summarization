@@ -3,7 +3,11 @@ Cornell Data Science Fall 2018
 Text summarization group: Wes Gurnee, Qian Huang, Jane Zhang
 
 This is an implementation of the textrank algorithm, an adaptation of the
-pagerank algorithm for keyword extraction and extractive summarization."""
+pagerank algorithm for keyword extraction and extractive summarization.
+
+To use: call getSummary(text, numSentences) -> will return numSentences sentence
+summary of text
+"""
 
 import editdistance
 import itertools
