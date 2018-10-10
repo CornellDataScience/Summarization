@@ -1,0 +1,62 @@
+---
+- name: Deploying Summarization Slack App
+  hosts: all
+  remote_user: root
+  become: true
+  become_method: sudo
+  environment:
+    LC_ALL: en_US.UTF-8
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+  vars:
+      repository_git_path: https://github.com/CornellDataScience/Summarization
+      repository_path: /home/Summarization
+  tasks:
+    - name: Install necessary packages
+      apt: update_cache=yes name={{ item }} state=present
+      with_items:
+        - libatlas-base-dev
+        - gfortran
+        - g++
+        - git
+        - python-pip
+        - nginx
+        - python-numpy
+        - python-scipy
+        - gridsite-clients
+    - name: Check if directory exists
+      stat: path='{{ repository_path }}'
+      register: cloned
+    - name: Pull application repo
+      command: chdir='{{ repository_path }}' git pull origin master
+      when: cloned.stat.exists
+    - name: Get updated files from git repository
+      git:
+        repo: '{{ repository_git_path }}'
+        dest: '{{ repository_path }}'
+      when: cloned.stat.exists == false
+    - name: Install pip requirements
+      command: pip install -r {{ repository_path }}/slack/slack_bot/requirements.txt
+    # - name: Install pip requirements
+    #   command: pip install -r {{ repository_path }}/requirements.txt
+    - name: Copy Upstart configuration
+      template: src=upstart.service dest=/etc/systemd/system/upstart.service
+    - name: Make sure our server is running
+      systemd: state=started name=upstart
+    - name: Copy Nginx site values
+      template: src=summary.nginx.j2 dest=/etc/nginx/sites-enabled/summary
+      notify:
+        - restart nginx
+    - name: Remove any default sites
+      file: path=/etc/nginx/sites-enabled/default state=absent
+      notify:
+        - restart nginx
+    - name: Remove any default sites
+      file: path=/etc/nginx/sites-available/default state=absent
+      notify:
+        - restart nginx
+    - name: Make sure nginx is running
+      service: name=nginx state=started
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted
