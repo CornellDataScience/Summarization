@@ -16,8 +16,8 @@ import nltk
 
 
 def build_graph(nodes):
-    """Return a networkx graph instance.
-    :param nodes: List of hashtables that represent the nodes of a graph.
+    """
+    Return networkx graph instance built from nodes
     """
     #initialize graph
     graph = nx.Graph()  
@@ -33,8 +33,8 @@ def build_graph(nodes):
 
 
 def extract_sentences(text, clean_sentences=False, language='english'):
-    """Return a paragraph formatted summary of the source text.
-    :param text: A string.
+    """
+    Return list of sentences in text sorted in descending order of importance
     """
     sent_detector = nltk.data.load('tokenizers/punkt/'+language+'.pickle')
     sentence_tokens = sent_detector.tokenize(text.strip())
