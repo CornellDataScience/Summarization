@@ -48,7 +48,7 @@ def extract_sentences(text, clean_sentences=False, language='english'):
 
     return sentences
 
-def get_summary(text, numSentences=1):
+def get_summary2(text, numSentences=1):
     '''
     Return summary of text in numSentences sentences (default: 1)
     '''
