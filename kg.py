@@ -10,8 +10,10 @@ import pickle
 import numpy as np
 import networkx as nx
 import en_core_web_sm
+import textacy
 from spacy import displacy
 from collections import Counter
+nlp = en_core_web_sm.load()
 
 class Entity:
     '''The entity class is for storing named entities with the KG. These will
@@ -51,6 +53,8 @@ class KG:
         self.doc_dict = {}
         # The number of unique index values given out for entities
         self.keys = 0
+        #set of all triple relationships in the form of (subj, vb, obj)
+        self.triples = set()
 
     def entity_detection(self):
         '''Compile a list of entities from a collection of documents.
@@ -74,8 +78,19 @@ class KG:
     def coreference_detection():
         pass
 
-    def triple_extraction():
-        pass
+    def triple_extraction(self):
+        '''
+        extracts triple relationships in text,
+        stored as 3-tuples in self.triples
+        '''
+        
+        for doc in self.doc_dict.items():
+            text = nlp(doc[1].text)
+            text_ext = textacy.extract.subject_verb_object_triples(text)
+
+            for x in text_ext:
+                self.triples.add(x)
+
 
     def graph_construction():
         pass
@@ -94,8 +109,20 @@ The GAO based its report on penetration tests the DoD itself undertook, as well 
 DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
 text = text.replace('\n', ' ')
-nlp = en_core_web_sm.load()
 kg = KG()
 kg.doc_dict = {1: nlp(text)}
 kg.entity_detection()
-pickle.dump(kg, open('kg.p', 'wb'))
+
+print("#######PRINTING ENTITIES#######")
+for e in kg.entities:
+    print(kg.entities[e].name)
+
+
+print("#######PRINTING TRIPLES#######")
+kg.triple_extraction()
+for tup in kg.triples:
+    print(tup)
+
+
+
+#pickle.dump(kg, open('kg.p', 'wb'))
