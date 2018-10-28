@@ -83,8 +83,8 @@ class KG:
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
         '''
-
-        for doc in self.doc_dict.items()
+        
+        for idx, doc in self.doc_dict.items():
             text_ext = textacy.extract.subject_verb_object_triples(doc)
 
             for x in text_ext:
