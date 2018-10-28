@@ -137,13 +137,13 @@ text = text.replace('\n', ' ')
 kg = KG()
 kg.doc_dict = {1: nlp(text)}
 
-print("detecting entities:")
+print("calling entity detection")
 kg.entity_detection()
-print("number of entities: {}".format(len(kg.entities)))
+print("number of entities now: {}".format(len(kg.entities)))
 
-print("extracting triples")
+print("calling triple extraction")
 kg.triple_extraction()
-print("number of entities: {}".format(len(kg.entities)))
+print("number of entities now: {}".format(len(kg.entities)))
 
 print("#######PRINTING ENTITIES#######")
 for e in kg.entities:
@@ -155,6 +155,8 @@ print("#######PRINTING TRIPLES#######")
 for tup in kg.triples:
     #print(type(tup[0].text))
     print(tup)
+
+#print(kg.entities.keys())
 
 
 
