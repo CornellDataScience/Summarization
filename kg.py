@@ -83,10 +83,9 @@ class KG:
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
         '''
-        
-        for doc in self.doc_dict.items():
-            text = nlp(doc[1].text)
-            text_ext = textacy.extract.subject_verb_object_triples(text)
+
+        for doc in self.doc_dict.items()
+            text_ext = textacy.extract.subject_verb_object_triples(doc)
 
             for x in text_ext:
                 self.triples.add(x)
