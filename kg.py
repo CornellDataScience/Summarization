@@ -78,20 +78,46 @@ class KG:
     def coreference_detection():
         pass
 
+    def get_pos(doc, pos_name):
+        "get list of pos_name entities from parsed document"
+        pps = []
+        for token in doc:
+            if token.pos_ == pos_name:
+                pp = ' '.join([tok.orth_ for tok in token.subtree])
+                pps.append(token.subtree) #pp
+        return pps
+
+
     def triple_extraction(self):
         '''
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
+
+        each triple object is tuple of span objects
         '''
         
+        #identify obvious subject-verb-object triples
         for idx, doc in self.doc_dict.items():
             text_ext = textacy.extract.subject_verb_object_triples(doc)
 
             for x in text_ext:
                 self.triples.add(x)
 
+        #add all subjects and objects to entities list if not present
+        ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
+        for tup in self.triples:
+            if tup[0].text not in ents:
+                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities))
 
-    def graph_construction():
+            if tup[2].text not in ents:
+                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities))
+
+        #TODO: parse grammar trees for relationships
+        #TODO: get all entities
+        #TODO: account for prepositions 'ADP' & other special cases (which) 
+
+
+    def graph_construction(self):
         pass
 
 
@@ -110,16 +136,24 @@ DoD testers found significant vulnerabilities in the department’s weapon syste
 text = text.replace('\n', ' ')
 kg = KG()
 kg.doc_dict = {1: nlp(text)}
+
+print("detecting entities:")
 kg.entity_detection()
+print("number of entities: {}".format(len(kg.entities)))
+
+print("extracting triples")
+kg.triple_extraction()
+print("number of entities: {}".format(len(kg.entities)))
 
 print("#######PRINTING ENTITIES#######")
 for e in kg.entities:
+    #print(type(kg.entities[e].name))
     print(kg.entities[e].name)
 
 
 print("#######PRINTING TRIPLES#######")
-kg.triple_extraction()
 for tup in kg.triples:
+    #print(type(tup[0].text))
     print(tup)
 
 
