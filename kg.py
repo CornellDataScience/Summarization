@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Cornell Data Science Fall 2018
 Text summarization group: Wes Gurnee, Qian Huang, Jane Zhang
@@ -11,16 +12,39 @@ import numpy as np
 import networkx as nx
 import en_core_web_sm
 import textacy
+from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from spacy import displacy
 from collections import Counter
 nlp = en_core_web_sm.load()
 
+def can_merge_span(span1, span2):
+    # All strings mapped to integers, for easy export to numpy
+
+    np_array1 = span1.to_array([LEMMA, LIKE_NUM, IS_STOP])
+    np_array1 = np.apply_along_axis(lambda x:  x[0] if x[1] or not x[2] else -1 , 1,np_array1 )
+    # print(np_array1)
+
+    np_array2 = span2.to_array([LEMMA, LIKE_NUM, IS_STOP])
+    np_array2 = np.apply_along_axis(lambda x: x[0] if x[1] or not x[2] else -1,
+                                    1, np_array2)
+    # print(np_array2)
+    score = np.intersect1d(np_array1, np_array2).size / np.union1d(np_array1, np_array2).size
+    if score > 0.8:
+        print("Entity Merge: " + span1.text + " and "+ span2.text + " because score = "+ str(score))
+        return True
+    return False
+
+
 class Entity:
     '''The entity class is for storing named entities with the KG. These will
     eventually be used to create the nodes of the KG.'''
-    def __init__(self, name, index):
+    def __init__(self, name, index, entity):
         #The plain text representation
         self.name = name
+
+        # spacy entity object
+        self.entity = entity
+
         #A set containing all plain text representations of the same entity
         self.aliases = {name}
         #The unique integer index value given by the KG to the entity
@@ -30,11 +54,20 @@ class Entity:
         #Spacy entity type
         self.type = None
 
+
+
     def merge(self, other_ent):
         '''Updates the entity to contain the aliases and appearences of another entity
         object representing that same underlying entity.'''
-        self.aliases = self.aliases.union(other_ent.aliases)
-        self.doc_appearances += other_ent.doc_appearances
+
+        # print(sim)
+        if can_merge_span(self.entity, other_ent.entity):
+            print(self.name + " merge with " + other_ent.name )
+            self.aliases = self.aliases.union(other_ent.aliases)
+            self.doc_appearances += other_ent.doc_appearances
+            return True
+
+        return False
 
 
 class KG:
@@ -66,7 +99,7 @@ class KG:
                     self.entities[self.name_to_ix[ent.text]].doc_appearances.append((ix, ent.start, ent.end))
                 else:
                     #Else create new entity and update KG data fields
-                    new_ent = Entity(ent.text, self.keys)
+                    new_ent = Entity(ent.text, self.keys, ent)
                     new_ent.type = ent.label_
                     new_ent.doc_appearances.append((ix, ent.start, ent.end))
                     self.entities[self.keys] = new_ent
@@ -75,7 +108,7 @@ class KG:
                     self.keys += 1
 
 
-    def coreference_detection():
+    def coreference_detection(self):
         pass
 
     def triple_extraction(self):
@@ -83,8 +116,8 @@ class KG:
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
         '''
-        
-        for doc in self.doc_dict.items():
+
+        for doc in self.doc_dict.items(self):
             text = nlp(doc[1].text)
             text_ext = textacy.extract.subject_verb_object_triples(text)
 
@@ -92,7 +125,7 @@ class KG:
                 self.triples.add(x)
 
 
-    def graph_construction():
+    def graph_construction(self):
         pass
 
 
@@ -114,14 +147,30 @@ kg.doc_dict = {1: nlp(text)}
 kg.entity_detection()
 
 print("#######PRINTING ENTITIES#######")
-for e in kg.entities:
-    print(kg.entities[e].name)
 
+for i in kg.entities:
+    print(kg.entities[i].name)
+    print(kg.entities[i].doc_appearances)
 
-print("#######PRINTING TRIPLES#######")
-kg.triple_extraction()
-for tup in kg.triples:
-    print(tup)
+print("#######PRINTING Compressed ENTITIES#######")
+result = {}
+for i in kg.entities:
+    e = kg.entities[i]
+    merged = False
+    for j in result:
+        if result[j].merge(e):
+            merged = True
+    if not merged :
+        result[i] = e
+
+for i in result:
+    print(result[i].name)
+    print(result[i].doc_appearances)
+
+# print("#######PRINTING TRIPLES#######")
+# kg.triple_extraction()
+# for tup in kg.triples:
+#     print(tup)
 
 
 
