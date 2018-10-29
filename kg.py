@@ -120,6 +120,17 @@ class KG:
                 pps.append(token.subtree) #pp
         return pps
 
+    def merge_entities(self):
+        result = {}
+        for i in self.entities:
+            e = kg.entities[i]
+            merged = False
+            for j in result:
+                if result[j].merge(e):
+                    merged = True
+            if not merged:
+                result[i] = e
+        self.entities = result
 
     def triple_extraction(self):
         '''
@@ -139,10 +150,11 @@ class KG:
         ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
         for tup in self.triples:
             if tup[0].text not in ents:
-                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities))
+                # TODO: None should be replaced by entity; Use doc to get it
+                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities), None)
 
             if tup[2].text not in ents:
-                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities))
+                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities), None)
 
         #TODO: parse grammar trees for relationships
         #TODO: get all entities
@@ -173,9 +185,14 @@ print("calling entity detection")
 kg.entity_detection()
 print("number of entities now: {}".format(len(kg.entities)))
 
+print("calling merge entities")
+kg.merge_entities()
+print("number of entities now: {}".format(len(kg.entities)))
+
 print("calling triple extraction")
 kg.triple_extraction()
 print("number of entities now: {}".format(len(kg.entities)))
+
 
 print("#######PRINTING ENTITIES#######")
 
@@ -183,26 +200,11 @@ for i in kg.entities:
     print(kg.entities[i].name)
     print(kg.entities[i].doc_appearances)
 
-print("#######PRINTING Compressed ENTITIES#######")
-result = {}
-for i in kg.entities:
-    e = kg.entities[i]
-    merged = False
-    for j in result:
-        if result[j].merge(e):
-            merged = True
-    if not merged :
-        result[i] = e
 
-for i in result:
-    print(result[i].name)
-    print(result[i].doc_appearances)
-
-
-print("#######PRINTING TRIPLES#######")
-for tup in kg.triples:
-    #print(type(tup[0].text))
-    print(tup)
+# print("#######PRINTING TRIPLES#######")
+# for tup in kg.triples:
+#     #print(type(tup[0].text))
+#     print(tup)
 
 
 #print(kg.entities.keys())
