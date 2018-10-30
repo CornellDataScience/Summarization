@@ -149,12 +149,13 @@ class KG:
         #add all subjects and objects to entities list if not present
         ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
         for tup in self.triples:
+            #print(type(tup[0]))
             if tup[0].text not in ents:
                 # TODO: None should be replaced by entity; Use doc to get it
-                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities), None)
+                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities), tup[0])
 
             if tup[2].text not in ents:
-                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities), None)
+                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities), tup[2])
 
         #TODO: parse grammar trees for relationships
         #TODO: get all entities
