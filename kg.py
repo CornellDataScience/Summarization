@@ -49,8 +49,8 @@ class Entity:
         self.aliases = {name}
         #The unique integer index value given by the KG to the entity
         self.index = index
-        #List of appearences in the document corpus formatted as (doc_ix, token_ix_start, token_ix_end)
-        self.doc_appearances = []
+        #set of appearences in the document corpus formatted as (doc_ix, token_ix_start, token_ix_end)
+        self.doc_appearances = set()
         #Spacy entity type
         self.type = None
 
@@ -64,7 +64,7 @@ class Entity:
         if can_merge_span(self.entity, other_ent.entity):
             print(self.name + " merge with " + other_ent.name )
             self.aliases = self.aliases.union(other_ent.aliases)
-            self.doc_appearances += other_ent.doc_appearances
+            self.doc_appearances.union(other_ent.doc_appearances)
             return True
 
         return False
@@ -82,6 +82,8 @@ class KG:
         self.name_to_ix = {}
         # {entity ix: entity name}
         self.ix_to_name = {}
+        # {doc_ix : {token_ix: entity_id}}
+        self.master_token_ix_to_entity = {}
         # {document id: spacy doc object}
         self.doc_dict = {}
         # The number of unique index values given out for entities
@@ -93,18 +95,24 @@ class KG:
         '''Compile a list of entities from a collection of documents.
         doc_dict - {document index: spacy Doc object}'''
         for ix, doc in self.doc_dict.items():
+            self.master_token_ix_to_entity[ix] = {}
             for ent in doc.ents: #For all entities in all documents
                 if ent.text in self.name_to_ix:
                     #If ent already exists, add appearence
-                    self.entities[self.name_to_ix[ent.text]].doc_appearances.append((ix, ent.start, ent.end))
+                    ent_id = self.name_to_ix[ent.text]
+                    self.entities[ent_id].doc_appearances.add((ix, ent.start, ent.end))
+                    for i in range(ent.start, ent.end):
+                        self.master_token_ix_to_entity[ix][i] = ent_id
                 else:
                     #Else create new entity and update KG data fields
                     new_ent = Entity(ent.text, self.keys, ent)
                     new_ent.type = ent.label_
-                    new_ent.doc_appearances.append((ix, ent.start, ent.end))
+                    new_ent.doc_appearances.add((ix, ent.start, ent.end))
                     self.entities[self.keys] = new_ent
                     self.name_to_ix[ent.text] = self.keys
                     self.ix_to_name[self.keys] = ent.text
+                    for i in range(ent.start, ent.end):
+                        self.master_token_ix_to_entity[ix][i] = self.keys
                     self.keys += 1
 
 
@@ -157,7 +165,7 @@ class KG:
 
         #TODO: parse grammar trees for relationships
         #TODO: get all entities
-        #TODO: account for prepositions 'ADP' & other special cases (which) 
+        #TODO: account for prepositions 'ADP' & other special cases (which)
 
 
     def graph_construction(self):
