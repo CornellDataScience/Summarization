@@ -15,7 +15,7 @@ import textacy
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from spacy import displacy
 from collections import Counter
-nlp = en_core_web_sm.load()
+nlp = spacy.load('en_coref_md')
 
 def can_merge_span(span1, span2):
     # All strings mapped to integers, for easy export to numpy
@@ -41,18 +41,16 @@ class Entity:
     def __init__(self, name, index, entity):
         #The plain text representation
         self.name = name
-
         # spacy entity object
         self.entity = entity
-
         #A set containing all plain text representations of the same entity
         self.aliases = {name}
         #The unique integer index value given by the KG to the entity
         self.index = index
         #set of appearences in the document corpus formatted as (doc_ix, token_ix_start, token_ix_end)
         self.doc_appearances = set()
-        #Spacy entity type
-        self.type = None
+        #Spacy entity label
+        self.ent_class = entity.label
 
 
 
@@ -106,7 +104,6 @@ class KG:
                 else:
                     #Else create new entity and update KG data fields
                     new_ent = Entity(ent.text, self.keys, ent)
-                    new_ent.type = ent.label_
                     new_ent.doc_appearances.add((ix, ent.start, ent.end))
                     self.entities[self.keys] = new_ent
                     self.name_to_ix[ent.text] = self.keys
@@ -115,9 +112,55 @@ class KG:
                         self.master_token_ix_to_entity[ix][i] = self.keys
                     self.keys += 1
 
+    def update_entity_appearance_records(self, doc_ix, ent_id, cluster, multi=False):
+        '''Updates entites doc_appearances field and knowledge graph
+        master_token_ix_to_entity field to accound for coreferences.
+        doc_ix : int - the document index of the cluster
+        ent_id : int or list - the entity id(s) to be updated
+        cluster : cluster object - contains references for updates
+        multi : bool - true if ent_id is a list'''
+        for mention in cluster.mentions:
+            for i in range(mention.start, mention.end):
+                self.master_token_ix_to_entity[doc_ix][i] = ent_id
+                if multi:
+                    for ent in ent_id:
+                        self.entities[ent].doc_appearances.add((doc_ix, mention.start, mention.end))
+                else:
+                    self.entities[ent_id].doc_appearances.add((doc_ix, mention.start, mention.end))
+
 
     def coreference_detection(self):
-        pass
+        '''Updates entity and knowledge graph data to account for
+        coreferences to entities (such as pronouns) in text.'''
+        #For each document
+        for ix, doc in self.doc_dict.items():
+            clusters = doc._.coref_clusters
+            #For each coreference cluster in the document
+            for cluster in clusters:
+                #Get the entity(s) associated with the cluster head
+                head = cluster.main
+                head_ents = []
+                head_start, head_end = head.start, head.end
+                for i in range(head.start, head.end):
+                    ent_ref = self.master_token_ix_to_entity[ix].get(i, -1)
+                    if ent_ref != -1:
+                        head_ents.append(ent_ref)
+                #If there is no assocated entity
+                if len(head_ents) == 0:
+                    #Create a new entity with appearances including the corefs
+                    new_ent = Entity(head.text_, self.keys, head)
+                    self.update_entity_appearance_records(ix, ent_id, cluster)
+                    self.entities[self.keys] = new_ent
+                    self.name_to_ix[head.text] = self.keys
+                    self.ix_to_name[self.keys] = head.text
+                    self.keys += 1
+                #If there are one or more associated entites, update appearance records
+                elif len(head_ents) == 1:
+                    head_ent = head_ents[0]
+                    self.update_entity_appearance_records(ix, head_ent, cluster)
+                else:
+                    self.update_entity_appearance_records(ix, head_ents, cluster, True)
+
 
     def get_pos(doc, pos_name):
         "get list of pos_name entities from parsed document"
@@ -190,6 +233,10 @@ kg.doc_dict = {1: nlp(text)}
 
 print("calling entity detection")
 kg.entity_detection()
+print("number of entities now: {}".format(len(kg.entities)))
+
+print("calling coreference detection")
+kg.coreference_detection()
 print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling merge entities")
