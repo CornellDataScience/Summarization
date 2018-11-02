@@ -12,10 +12,27 @@ import numpy as np
 import networkx as nx
 import en_core_web_sm
 import textacy
+import re
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from spacy import displacy
 from collections import Counter
 nlp = en_core_web_sm.load()
+
+def caps_abrev(caps, full):
+    ## caps should be a token where caps stand for the capitalized words in full
+    ## full should be a span
+    caps = re.sub("[a-z]", "", caps.text)
+    i = 0
+    for l in full:
+        c = l.text[0]
+        if l.text.isupper() or not c.isupper():
+            continue
+        if i >= len(caps) or c != caps[i]:
+            return False
+        i += 1
+    return i == len(caps)
+
+
 
 def can_merge_span(span1, span2):
     # All strings mapped to integers, for easy export to numpy
@@ -32,6 +49,17 @@ def can_merge_span(span1, span2):
     if score > 0.8:
         print("Entity Merge: " + span1.text + " and "+ span2.text + " because score = "+ str(score))
         return True
+
+    s1 = np.array(span1)[np_array1 != -1]
+    s2 = np.array(span2)[np_array2 != -1]
+
+    if s1.size > 1 and s2.size == 1:
+        if(caps_abrev(s2[0], s1)):
+            print("Entity Merge: " + span1.text + " and " + span2.text + " because " +
+                  str(s2) + " stands for" + str(s1))
+
+            return True
+
     return False
 
 
@@ -200,10 +228,10 @@ for i in kg.entities:
     print(kg.entities[i].doc_appearances)
 
 
-# print("#######PRINTING TRIPLES#######")
-# for tup in kg.triples:
-#     #print(type(tup[0].text))
-#     print(tup)
+print("#######PRINTING TRIPLES#######")
+for tup in kg.triples:
+    #print(type(tup[0].text))
+    print(tup)
 
 
 #print(kg.entities.keys())
