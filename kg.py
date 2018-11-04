@@ -64,7 +64,6 @@ class Entity:
             self.aliases = self.aliases.union(other_ent.aliases)
             self.doc_appearances.union(other_ent.doc_appearances)
             return True
-
         return False
 
 
@@ -88,6 +87,24 @@ class KG:
         self.keys = 0
         #set of all triple relationships in the form of (subj, vb, obj)
         self.triples = set()
+        #
+        self.relations = {}
+
+    def add_new_entity(self, doc_ix, ent_span):
+        '''Updates the KG data fields and creates new entity object.
+        Return the id of the newly created entity.
+        doc_ix: int - the document index
+        ent_span: spacy.span - the span object associated with the new entity'''
+        ent_id = self.keys
+        new_ent = Entity(ent_span.text, ent_id, ent_span)
+        new_ent.doc_appearances.add((doc_ix, ent_span.start, ent_span.end))
+        self.entities[ent_id] = new_ent
+        self.name_to_ix[ent_span.text] = ent_id
+        self.ix_to_name[ent_id] = ent_span.text
+        for i in range(ent_span.start, ent_span.end):
+            self.master_token_ix_to_entity[doc_ix][i] = ent_id
+        self.keys += 1
+        return ent_id
 
     def entity_detection(self):
         '''Compile a list of entities from a collection of documents.
@@ -103,14 +120,7 @@ class KG:
                         self.master_token_ix_to_entity[ix][i] = ent_id
                 else:
                     #Else create new entity and update KG data fields
-                    new_ent = Entity(ent.text, self.keys, ent)
-                    new_ent.doc_appearances.add((ix, ent.start, ent.end))
-                    self.entities[self.keys] = new_ent
-                    self.name_to_ix[ent.text] = self.keys
-                    self.ix_to_name[self.keys] = ent.text
-                    for i in range(ent.start, ent.end):
-                        self.master_token_ix_to_entity[ix][i] = self.keys
-                    self.keys += 1
+                    self.add_new_entity(ix, ent)
 
     def update_entity_appearance_records(self, doc_ix, ent_id, cluster, multi=False):
         '''Updates entites doc_appearances field and knowledge graph
@@ -148,12 +158,8 @@ class KG:
                 #If there is no assocated entity
                 if len(head_ents) == 0:
                     #Create a new entity with appearances including the corefs
-                    new_ent = Entity(head.text_, self.keys, head)
+                    ent_id = self.add_new_entity(ix, ent_span)
                     self.update_entity_appearance_records(ix, ent_id, cluster)
-                    self.entities[self.keys] = new_ent
-                    self.name_to_ix[head.text] = self.keys
-                    self.ix_to_name[self.keys] = head.text
-                    self.keys += 1
                 #If there are one or more associated entites, update appearance records
                 elif len(head_ents) == 1:
                     head_ent = head_ents[0]
@@ -172,6 +178,7 @@ class KG:
         return pps
 
     def merge_entities(self):
+        #TODO: update master_token_ix_to_entity
         result = {}
         for i in self.entities:
             e = kg.entities[i]
