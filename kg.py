@@ -115,7 +115,9 @@ class KG:
         self.keys = 0
         #set of all triple relationships in the form of (subj, vb, obj)
         self.triples = set()
-        #
+        #The number of unique index values given out for relations
+        self.relation_ixs = 0
+        #{ix: {'doc_ix', 'span'}}
         self.relations = {}
 
     def add_new_entity(self, doc_ix, ent_span):
@@ -159,11 +161,12 @@ class KG:
         multi : bool - true if ent_id is a list'''
         for mention in cluster.mentions:
             for i in range(mention.start, mention.end):
-                self.master_token_ix_to_entity[doc_ix][i] = ent_id
                 if multi:
+                    self.master_token_ix_to_entity[doc_ix][i] = list(ent_id)
                     for ent in ent_id:
                         self.entities[ent].doc_appearances.add((doc_ix, mention.start, mention.end))
                 else:
+                    self.master_token_ix_to_entity[doc_ix][i] = ent_id
                     self.entities[ent_id].doc_appearances.add((doc_ix, mention.start, mention.end))
 
 
@@ -177,12 +180,11 @@ class KG:
             for cluster in clusters:
                 #Get the entity(s) associated with the cluster head
                 head = cluster.main
-                head_ents = []
-                head_start, head_end = head.start, head.end
+                head_ents = set()
                 for i in range(head.start, head.end):
                     ent_ref = self.master_token_ix_to_entity[ix].get(i, -1)
                     if ent_ref != -1:
-                        head_ents.append(ent_ref)
+                        head_ents.add(ent_ref)
                 #If there is no assocated entity
                 if len(head_ents) == 0:
                     #Create a new entity with appearances including the corefs
@@ -190,7 +192,7 @@ class KG:
                     self.update_entity_appearance_records(ix, ent_id, cluster)
                 #If there are one or more associated entites, update appearance records
                 elif len(head_ents) == 1:
-                    head_ent = head_ents[0]
+                    head_ent = head_ents.pop()
                     self.update_entity_appearance_records(ix, head_ent, cluster)
                 else:
                     self.update_entity_appearance_records(ix, head_ents, cluster, True)
@@ -218,6 +220,14 @@ class KG:
                 result[i] = e
         self.entities = result
 
+    def create_new_relation(self, doc_ix, span):
+        '''Add a new relation to the KG.
+        Returns the relation index.'''
+        new_rel_ix = self.relation_ixs
+        self.relations[new_rel_ix] = {'doc_ix':doc_ix, 'span':span}
+        self.relation_ixs += 1
+        return new_rel_ix
+
     def triple_extraction(self):
         '''
         extracts triple relationships in text,
@@ -227,27 +237,58 @@ class KG:
         '''
         #identify obvious subject-verb-object triples
         for idx, doc in self.doc_dict.items():
-            text_ext = textacy.extract.subject_verb_object_triples(doc)
+            doc_trips = textacy.extract.subject_verb_object_triples(doc)
 
-            for x in text_ext:
-                self.triples.add(x)
+            #for x in text_ext:
+            #    self.triples.add(x)
 
         #add all subjects and objects to entities list if not present
-        ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
-        for tup in self.triples:
-            if tup[0].text not in ents:
-                self.entities[len(self.entities)] = Entity(tup[0].text, len(self.entities), tup[0])
+        #ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
+        for sub, vrb, obj in doc_trips:
+            s, v, o = None, None, None
+            #Get the entity subject, or create new one
+            for i in range(sub.start, sub.end):
+                if self.master_token_ix_to_entity[idx].get(i, -1) != -1:
+                    s = self.master_token_ix_to_entity[idx][i]
+                    break
+            if not s:
+                s = self.add_new_entity(idx, sub)
+            #Get the entity of object, or create new one
+            for i in range(obj.start, obj.end):
+                if self.master_token_ix_to_entity[idx].get(i, -1) != -1:
+                    o = self.master_token_ix_to_entity[idx][i]
+                    break
+            if not o:
+                o = self.add_new_entity(idx, obj)
+            #Create new relation
+            v = self.create_new_relation(idx, vrb)
+            #Check if multi entity subject or object and create triples for every
+            # subject and/or object entity
+            multi_s = isinstance(s, list)
+            multi_o = isinstance(o, list)
+            if multi_s and not multi_o:
+                for s_ents in s:
+                    self.triples.add((s_ents,v,o))
+            elif multi_o and not multi_s:
+                for o_ents in o:
+                    self.triples.add((s,v,o_ents))
+            elif multi_o and multi_s:
+                for s_ents in s:
+                    for o_ents in o:
+                        self.triples.add((s_ents,v,o_ents))
+            else:
+                self.triples.add((s,v,o))
 
-            if tup[2].text not in ents:
-                self.entities[len(self.entities)] = Entity(tup[2].text, len(self.entities), tup[2])
-
+            #Parse relation
         #TODO: parse grammar trees for relationships
         #TODO: get all entities
         #TODO: account for prepositions 'ADP' & other special cases (which)
 
 
-    def graph_construction(self):
-        pass
+    def construct_graph(self):
+        self.entity_detection()
+        self.coreference_detection()
+        self.triple_extraction()
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
