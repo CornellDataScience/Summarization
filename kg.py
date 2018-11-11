@@ -16,7 +16,10 @@ import re
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from spacy import displacy
 from collections import Counter
-nlp = spacy.load('en_coref_md')
+nlp = spacy.load('en_coref_md') #
+#nlp = en_core_web_sm.load()
+
+#TODO: change nlp back and uncomment coref detection
 
 def caps_abrev(caps, full):
     ## caps should be a token where caps stand for the capitalized words in full
@@ -245,6 +248,7 @@ class KG:
         #add all subjects and objects to entities list if not present
         #ents = set(list(map(lambda c: self.entities[c].name, self.entities.keys())))
         for sub, vrb, obj in doc_trips:
+            print(sub, vrb, obj)
             s, v, o = None, None, None
             #Get the entity subject, or create new one
             for i in range(sub.start, sub.end):
@@ -279,16 +283,26 @@ class KG:
             else:
                 self.triples.add((s,v,o))
 
-            #Parse relation
+        #Parse relation
         #TODO: parse grammar trees for relationships
         #TODO: get all entities
         #TODO: account for prepositions 'ADP' & other special cases (which)
 
 
     def construct_graph(self):
-        self.entity_detection()
-        self.coreference_detection()
-        self.triple_extraction()
+        #self.entity_detection()
+        #self.coreference_detection()
+        #self.triple_extraction()
+        
+
+        #add each entity as node to graph
+        for entity in self.entities:
+            self.graph.add_node(self.entities[entity], name = self.entities[entity].name)
+
+        #assuming each subj, obj in triple is existing node, adds edges
+        for triple in self.triples:
+            #TODO: each attribute is int, how to represent? 
+            self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
@@ -312,7 +326,7 @@ kg.entity_detection()
 print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling coreference detection")
-kg.coreference_detection()
+kg.coreference_detection() #
 print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling merge entities")
@@ -324,6 +338,8 @@ kg.triple_extraction()
 print("number of entities now: {}".format(len(kg.entities)))
 
 
+
+
 print("#######PRINTING ENTITIES#######")
 
 for i in kg.entities:
@@ -333,12 +349,13 @@ for i in kg.entities:
 
 print("#######PRINTING TRIPLES#######")
 for tup in kg.triples:
-    #print(type(tup[0].text))
     print(tup)
+    #TODO: print((kg.entities[tup[0]].name, kg.entities[tup[1]].name, kg.entities[tup[2]].name))
 
 
-#print(kg.entities.keys())
-
+print("making graph......")
+kg.construct_graph()
+print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
 
 
 #pickle.dump(kg, open('kg.p', 'wb'))
