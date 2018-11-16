@@ -18,6 +18,7 @@ from spacy import displacy
 from collections import Counter
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
+import graph_summarize as compress
 
 #TODO: change nlp back and uncomment coref detection
 
@@ -290,18 +291,12 @@ class KG:
 
 
     def construct_graph(self):
-        #self.entity_detection()
-        #self.coreference_detection()
-        #self.triple_extraction()
-        
-
         #add each entity as node to graph
         for entity in self.entities:
-            self.graph.add_node(self.entities[entity], name = self.entities[entity].name)
+            self.graph.add_node(self.entities[entity].index, name = self.entities[entity].name)
 
         #assuming each subj, obj in triple is existing node, adds edges
         for triple in self.triples:
-            #TODO: each attribute is int, how to represent? 
             self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
 
@@ -350,7 +345,6 @@ for i in kg.entities:
 print("#######PRINTING TRIPLES#######")
 for tup in kg.triples:
     print(tup)
-    #TODO: print((kg.entities[tup[0]].name, kg.entities[tup[1]].name, kg.entities[tup[2]].name))
 
 
 print("making graph......")
@@ -358,4 +352,10 @@ kg.construct_graph()
 print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
 
 
+print("summarizing graph......")
+sg = compress.greedy_summarize(kg.graph, 8, 0.05)
+print("graph has {} nodes and {} edges".format(sg.number_of_nodes(), sg.number_of_edges()))
+
+
 #pickle.dump(kg, open('kg.p', 'wb'))
+
