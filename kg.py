@@ -20,6 +20,8 @@ nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
 import graph_summarize as cp
 
+
+
 def caps_abrev(caps, full):
     ## caps should be a token where caps stand for the capitalized words in full
     ## full should be a span
@@ -101,8 +103,10 @@ class KG:
     '''The KG class is for maintaining all of the data associated with the
     knowledge graph as well as the various procedures for construction.'''
     def __init__(self):
-        #Stores the final constructed graph
+        #Stores the final constructed graph (full)
         self.graph = nx.MultiDiGraph()
+        #Stores the final constructed summarized graph
+        self.sum_graph = nx.MultiDiGraph()
         # {entity id: entity object}
         self.entities = {}
         # {entity name: entity ix}
@@ -282,11 +286,7 @@ class KG:
             else:
                 self.triples.add((s,v,o))
 
-        #Parse relation
-        #TODO: parse grammar trees for relationships
-        #TODO: get all entities
-        #TODO: account for prepositions 'ADP' & other special cases (which)
-
+        
 
     def construct_graph(self):
         #add each entity as node to graph
@@ -351,8 +351,10 @@ print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.gr
 
 
 print("summarizing graph......")
-sg = cp.greedy_summarize(kg.graph, 8, 0.05)
-print("graph has {} nodes and {} edges".format(sg.number_of_nodes(), sg.number_of_edges()))
+kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05)
+print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
+
+#TODO: back to text
 
 #pickle.dump(kg, open('kg.p', 'wb'))
 
