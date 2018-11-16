@@ -18,9 +18,7 @@ from spacy import displacy
 from collections import Counter
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
-import graph_summarize as compress
-
-#TODO: change nlp back and uncomment coref detection
+import graph_summarize as cp
 
 def caps_abrev(caps, full):
     ## caps should be a token where caps stand for the capitalized words in full
@@ -353,9 +351,8 @@ print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.gr
 
 
 print("summarizing graph......")
-sg = compress.greedy_summarize(kg.graph, 8, 0.05)
+sg = cp.greedy_summarize(kg.graph, 8, 0.05)
 print("graph has {} nodes and {} edges".format(sg.number_of_nodes(), sg.number_of_edges()))
-
 
 #pickle.dump(kg, open('kg.p', 'wb'))
 
