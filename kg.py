@@ -15,7 +15,7 @@ import textacy
 import re
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from spacy import displacy
-from collections import Counter
+from collections import Counter, deque
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
 import graph_summarize as cp
@@ -89,14 +89,9 @@ class Entity:
     def merge(self, other_ent):
         '''Updates the entity to contain the aliases and appearences of another entity
         object representing that same underlying entity.'''
-
-        # print(sim)
-        if can_merge_span(self.entity, other_ent.entity):
-            print(self.name + " merge with " + other_ent.name )
-            self.aliases = self.aliases.union(other_ent.aliases)
-            self.doc_appearances.union(other_ent.doc_appearances)
-            return True
-        return False
+        print(self.name + " merge with " + other_ent.name )
+        self.aliases = self.aliases.union(other_ent.aliases)
+        self.doc_appearances.union(other_ent.doc_appearances)
 
 
 class KG:
@@ -213,18 +208,47 @@ class KG:
                 pps.append(token.subtree) #pp
         return pps
 
-    def merge_entities(self):
-        #TODO: update master_token_ix_to_entity
-        result = {}
-        for i in self.entities:
-            e = kg.entities[i]
-            merged = False
-            for j in result:
-                if result[j].merge(e):
-                    merged = True
-            if not merged:
-                result[i] = e
-        self.entities = result
+    def merge_entities(self, super_ent_ix, sub_ent_ix):
+        '''Merges two entities and updates the approprate data in the KG
+        and entity objects.
+        super_ent_ix : int - entity id of the absorbing entity
+        sub_ent_ix   : int - entity id of the absorbed entity.'''
+        super_ent = self.entities[super_ent_ix]
+        sub_ent = self.entities[sub_ent_ix]
+        #Update subent
+        self.name_to_ix[sub_ent.name] = super_ent.index
+        self.ix_to_name[sub_ent.index] = super_ent.name
+        for doc, start, end in sub_ent.doc_appearances:
+            for i in range(start, end):
+                self.master_token_ix_to_entity[doc][i] = super_ent_ix
+        super_ent.merge(sub_ent)
+        del self.entities[sub_ent_ix]
+
+
+    def entity_matches(self, ent_id):
+        '''Returns the ids of entities that can be merged with entity of ent_id
+        ent_id : int - the entity id
+        returns: list'''
+        matches = []
+        for candidate in self.entities:
+            if candidate == ent_id:
+                continue
+            elif can_merge_span(self.entities[ent_id].entity, self.entities[candidate].entity):
+                matches.append(candidate)
+        return matches
+
+    def condense_entities(self):
+        '''Runs the process of entity merging after detection and coreference.
+        NOTE: does NOT update triples so only run before triple extraction.'''
+        Q = deque(list(self.entities.keys()))
+        deleted_set = set()
+        while Q:
+            ent = Q.pop()
+            if ent not in deleted_set:
+                matches = self.entity_matches(ent)
+                for match in matches:
+                    deleted_set.add(match)
+                    self.merge_entities(ent, match)
 
     def create_new_relation(self, doc_ix, span):
         '''Add a new relation to the KG.
@@ -286,12 +310,13 @@ class KG:
             else:
                 self.triples.add((s,v,o))
 
-        
+
 
     def construct_graph(self):
+        #TODO: add weights
         #add each entity as node to graph
-        for entity in self.entities:
-            self.graph.add_node(self.entities[entity].index, name = self.entities[entity].name)
+        for id, entity in self.entities.items():
+            self.graph.add_node(entity.index, name = entity.name)
 
         #assuming each subj, obj in triple is existing node, adds edges
         for triple in self.triples:
@@ -323,7 +348,7 @@ kg.coreference_detection() #
 print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling merge entities")
-kg.merge_entities()
+kg.condense_entities()
 print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling triple extraction")
@@ -357,4 +382,3 @@ print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), k
 #TODO: back to text
 
 #pickle.dump(kg, open('kg.p', 'wb'))
-
