@@ -19,6 +19,7 @@ from collections import Counter, deque
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
 import graph_summarize as cp
+import matplotlib.pyplot as plt
 
 
 
@@ -373,12 +374,16 @@ for tup in kg.triples:
 print("making graph......")
 kg.construct_graph()
 print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
+plt.figure()
+nx.draw_networkx(kg.graph)
 
 
 print("summarizing graph......")
 kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05)
 print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
-
+plt.figure()
+nx.draw_networkx(kg.sum_graph)
+plt.show()
 #TODO: back to text
 
 #pickle.dump(kg, open('kg.p', 'wb'))
