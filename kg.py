@@ -5,22 +5,22 @@ Text summarization group: Wes Gurnee, Qian Huang, Jane Zhang
 
 This script generates knowledge graphs from unstructured text which has been
 inspired by the T2KG paper."""
-
+import re
+import os
 import spacy
 import pickle
+import textacy
 import numpy as np
 import networkx as nx
 import en_core_web_sm
-import textacy
-import re
-from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
-from spacy import displacy
-from collections import Counter, deque
-nlp = spacy.load('en_coref_md') #
-#nlp = en_core_web_sm.load()
 import graph_summarize as cp
 import matplotlib.pyplot as plt
+from spacy import displacy
+from collections import Counter, deque
+from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 
+nlp = spacy.load('en_coref_md') #
+#nlp = en_core_web_sm.load()
 
 
 def caps_abrev(caps, full):
@@ -186,11 +186,14 @@ class KG:
                 for i in range(head.start, head.end):
                     ent_ref = self.master_token_ix_to_entity[ix].get(i, -1)
                     if ent_ref != -1:
-                        head_ents.add(ent_ref)
+                        try: #If there is a single entity
+                            head_ents.add(ent_ref)
+                        except: #If there are multiple entities
+                            head_ents |= set(ent_ref)
                 #If there is no assocated entity
                 if len(head_ents) == 0:
                     #Create a new entity with appearances including the corefs
-                    ent_id = self.add_new_entity(ix, ent_span)
+                    ent_id = self.add_new_entity(ix, head)
                     self.update_entity_appearance_records(ix, ent_id, cluster)
                 #If there are one or more associated entites, update appearance records
                 elif len(head_ents) == 1:
@@ -311,8 +314,6 @@ class KG:
             else:
                 self.triples.add((s,v,o))
 
-
-
     def construct_graph(self):
         #TODO: add weights
         #add each entity as node to graph
@@ -322,6 +323,13 @@ class KG:
         #assuming each subj, obj in triple is existing node, adds edges
         for triple in self.triples:
             self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
+
+    def add_docs_from_dir(self, dir):
+        for ix, doc in enumerate(os.listdir(dir)):
+            with open(dir + doc, 'r', encoding="utf-8") as f:
+                text = f.read()
+                spacy_text = nlp(text)
+                self.doc_dict[ix] = spacy_text
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
@@ -338,8 +346,8 @@ DoD testers found significant vulnerabilities in the department’s weapon syste
 
 text = text.replace('\n', ' ')
 kg = KG()
-kg.doc_dict = {1: nlp(text)}
-
+#kg.doc_dict = {1: nlp(text)}
+kg.add_docs_from_dir('Data/trump_russia/')
 print("calling entity detection")
 kg.entity_detection()
 print("number of entities now: {}".format(len(kg.entities)))
