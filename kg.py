@@ -325,11 +325,49 @@ class KG:
             self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
     def add_docs_from_dir(self, dir):
+        if dir == '':
+            dir = None
         for ix, doc in enumerate(os.listdir(dir)):
-            with open(dir + doc, 'r', encoding="utf-8") as f:
+            print(dir + doc)
+            with open(dir + doc, 'r', encoding='utf-8') as f:
                 text = f.read()
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
+
+    def make(self, dir=''):
+        self.add_docs_from_dir(dir)
+        print("calling entity detection")
+        self.entity_detection()
+        print("number of entities now: {}".format(len(kg.entities)))
+
+        print("calling coreference detection")
+        self.coreference_detection() #
+        print("number of entities now: {}".format(len(kg.entities)))
+
+        print("calling merge entities")
+        self.condense_entities()
+        print("number of entities now: {}".format(len(kg.entities)))
+
+        print("calling triple extraction")
+        self.triple_extraction()
+        print("number of entities now: {}".format(len(kg.entities)))
+        print("#######PRINTING ENTITIES#######")
+
+        for i in self.entities:
+            print(self.entities[i].name)
+            print(self.entities[i].doc_appearances)
+        print("#######PRINTING TRIPLES#######")
+        for tup in self.triples:
+            print(tup)
+        print("making graph......")
+        self.construct_graph()
+        print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
+                                                       self.graph.number_of_edges()))
+        plt.figure()
+        nx.draw_networkx(self.graph)
+        save_name = 'Graphs/' + [x for x in dir.split('/') if len(x)>0][-1] + '_graph.p'
+        pickle.dump(self.graph, open(save_name, 'wb'))
+        return self.graph
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
@@ -347,43 +385,7 @@ DoD testers found significant vulnerabilities in the department’s weapon syste
 text = text.replace('\n', ' ')
 kg = KG()
 #kg.doc_dict = {1: nlp(text)}
-kg.add_docs_from_dir('Data/trump_russia/')
-print("calling entity detection")
-kg.entity_detection()
-print("number of entities now: {}".format(len(kg.entities)))
-
-print("calling coreference detection")
-kg.coreference_detection() #
-print("number of entities now: {}".format(len(kg.entities)))
-
-print("calling merge entities")
-kg.condense_entities()
-print("number of entities now: {}".format(len(kg.entities)))
-
-print("calling triple extraction")
-kg.triple_extraction()
-print("number of entities now: {}".format(len(kg.entities)))
-
-
-
-
-print("#######PRINTING ENTITIES#######")
-
-for i in kg.entities:
-    print(kg.entities[i].name)
-    print(kg.entities[i].doc_appearances)
-
-
-print("#######PRINTING TRIPLES#######")
-for tup in kg.triples:
-    print(tup)
-
-
-print("making graph......")
-kg.construct_graph()
-print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
-plt.figure()
-nx.draw_networkx(kg.graph)
+kg.make('Data/trump_russia/')
 
 
 print("summarizing graph......")
