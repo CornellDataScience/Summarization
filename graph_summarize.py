@@ -27,12 +27,13 @@ def bfs_expansion(G, source, depth_limit=None):
     return visited
 
 
-def greedy_summarize(G, k, c):
+def greedy_summarize(G, k, c, degree_weight):
     selected = []
     dom = []
-    largest_degree_vs = sorted(list(G.degree()), key=lambda item: item[1])[-k:]
-    for (i, degree) in largest_degree_vs:
-        depth = int(degree * c)
+    print("g1: "  + str(G.nodes[1]))
+    largest_degree_vs = sorted(G.nodes.keys(), key=lambda i: G.nodes[i]['weight'] + G.degree()[i] * degree_weight) [-k:]
+    for i in largest_degree_vs:
+        depth = int(G.nodes[i]['weight'] * c)
         selected += bfs_expansion(G, i, depth_limit=depth)
         dom += nx.dominating_set(G, i)
 

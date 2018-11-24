@@ -23,10 +23,13 @@ nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
 
 
-def caps_abrev(caps, full):
+def caps_abrev(caps_o, full):
     ## caps should be a token where caps stand for the capitalized words in full
     ## full should be a span
-    caps = re.sub("[a-z]", "", caps.text)
+    caps = re.sub("[a-z]", "", caps_o.text)
+    if len(caps) < 0.6 * len(caps_o.text):
+        return False
+
     i = 0
     for l in full:
         c = l.text[0]
@@ -44,12 +47,16 @@ def can_merge_span(span1, span2):
 
     np_array1 = span1.to_array([LEMMA, LIKE_NUM, IS_STOP])
     np_array1 = np.apply_along_axis(lambda x:  x[0] if x[1] or not x[2] else -1 , 1,np_array1 )
-    # print(np_array1)
 
     np_array2 = span2.to_array([LEMMA, LIKE_NUM, IS_STOP])
     np_array2 = np.apply_along_axis(lambda x: x[0] if x[1] or not x[2] else -1,
                                     1, np_array2)
-    # print(np_array2)
+    if np.all(np_array1 == -1) or np.all(np_array2 == -1):
+        print(span1)
+        print(span2)
+        print("not possible to merge")
+        return False
+
     score = np.intersect1d(np_array1, np_array2).size / np.union1d(np_array1, np_array2).size
     if score > 0.8:
         print("Entity Merge: " + span1.text + " and "+ span2.text + " because score = "+ str(score))
@@ -121,6 +128,8 @@ class KG:
         self.relation_ixs = 0
         #{ix: {'doc_ix', 'span'}}
         self.relations = {}
+
+        self.max_weight = 0
 
     def add_new_entity(self, doc_ix, ent_span):
         '''Updates the KG data fields and creates new entity object.
@@ -319,6 +328,10 @@ class KG:
         #add each entity as node to graph
         for id, entity in self.entities.items():
             self.graph.add_node(entity.index, name = entity.name)
+            w = len(entity.doc_appearances)
+            self.graph.nodes[entity.index]['weight'] = w
+            if w  > self.max_weight:
+                self.max_weight = w
 
         #assuming each subj, obj in triple is existing node, adds edges
         for triple in self.triples:
@@ -347,7 +360,8 @@ DoD testers found significant vulnerabilities in the department’s weapon syste
 text = text.replace('\n', ' ')
 kg = KG()
 #kg.doc_dict = {1: nlp(text)}
-kg.add_docs_from_dir('Data/trump_russia/')
+print("ok")
+kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
 print("calling entity detection")
 kg.entity_detection()
 print("number of entities now: {}".format(len(kg.entities)))
@@ -358,7 +372,7 @@ print("number of entities now: {}".format(len(kg.entities)))
 
 print("calling merge entities")
 kg.condense_entities()
-print("number of entities now: {}".format(len(kg.entities)))
+print("`number of entities now: {}".format(len(kg.entities)))
 
 print("calling triple extraction")
 kg.triple_extraction()
@@ -387,11 +401,16 @@ nx.draw_networkx(kg.graph)
 
 
 print("summarizing graph......")
-kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05)
+kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05, kg.max_weight * 0.7)
 print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
 plt.figure()
 nx.draw_networkx(kg.sum_graph)
+
+for i in kg.sum_graph.nodes:
+    print(kg.sum_graph.nodes[i])
+
 plt.show()
+
 #TODO: back to text
 
 #pickle.dump(kg, open('kg.p', 'wb'))
