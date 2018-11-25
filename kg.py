@@ -131,6 +131,28 @@ class KG:
 
         self.max_weight = 0
 
+    def filter_entities(self):
+        '''
+        naive approach to filter entities that don't make any sense
+        '''
+        invalid_ents = set()
+
+        for ent in self.entities:
+            name = self.entities[ent].name
+
+            words = list(map(lambda c: c.strip(), name.split(" ")))
+
+            is_alpha = all(list(map(lambda c: c.isalpha(), words)))
+            is_len = len(words) < 7
+
+            conditions = is_len and is_alpha 
+
+            if not conditions: invalid_ents.add(ent)
+
+        for ent in invalid_ents:
+            self.entities.pop(ent)
+
+
     def add_new_entity(self, doc_ix, ent_span):
         '''Updates the KG data fields and creates new entity object.
         Return the id of the newly created entity.
@@ -324,7 +346,6 @@ class KG:
                 self.triples.add((s,v,o))
 
     def construct_graph(self):
-        #TODO: add weights
         #add each entity as node to graph
         for id, entity in self.entities.items():
             self.graph.add_node(entity.index, name = entity.name)
@@ -372,6 +393,10 @@ class KG:
         print("#######PRINTING TRIPLES#######")
         for tup in self.triples:
             print(tup)
+
+        kg.filter_entities()
+        print("filter...number of entities now: {}".format(len(kg.entities)))
+
         print("making graph......")
         self.construct_graph()
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
@@ -397,11 +422,11 @@ DoD testers found significant vulnerabilities in the department’s weapon syste
 
 text = text.replace('\n', ' ')
 kg = KG()
-#kg.doc_dict = {1: nlp(text)}
+kg.doc_dict = {1: nlp(text)}
 
-print("ok")
-kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-# kg.make('Data/trump_russia/')
+# print("ok")
+# kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
+# # kg.make('Data/trump_russia/')
 print("calling entity detection")
 kg.entity_detection()
 print("number of entities now: {}".format(len(kg.entities)))
@@ -432,6 +457,8 @@ print("#######PRINTING TRIPLES#######")
 for tup in kg.triples:
     print(tup)
 
+kg.filter_entities()
+print("filter...number of entities now: {}".format(len(kg.entities)))
 
 print("making graph......")
 kg.construct_graph()
@@ -445,6 +472,7 @@ kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05, kg.max_weight * 0.7)
 print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
 plt.figure()
 nx.draw_networkx(kg.sum_graph)
+
 
 for i in kg.sum_graph.nodes:
     print(kg.sum_graph.nodes[i])
