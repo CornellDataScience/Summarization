@@ -18,9 +18,23 @@ import matplotlib.pyplot as plt
 from spacy import displacy
 from collections import Counter, deque
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
+from networkx import algorithms as algo
 
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
+
+
+def dfs_graph(g):
+    '''
+    takes in graph g and returns dfs traversal in ordered list
+    '''
+    rlist =[]
+
+    gen = algo.traversal.dfs_edges(g)
+    for edge in gen:
+        rlist.append(edge)
+
+    return rlist
 
 
 def caps_abrev(caps_o, full):
