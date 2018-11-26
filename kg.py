@@ -155,11 +155,15 @@ class KG:
             name = self.entities[ent].name
 
             words = list(map(lambda c: c.strip(), name.split(" ")))
+            is_len = len(words) < 6
 
-            is_alpha = all(list(map(lambda c: c.isalpha(), words)))
-            is_len = len(words) < 7
 
+<<<<<<< HEAD
             conditions = is_len and is_alpha
+=======
+            is_alpha = any(list(map(lambda c: c.isalpha(), list(name))))
+            conditions = is_len and is_alpha 
+>>>>>>> 4715c7fc89ae69851e81035ec4362bf0ddb57754
 
             if not conditions: invalid_ents.add(ent)
 
