@@ -159,7 +159,7 @@ class KG:
             is_alpha = all(list(map(lambda c: c.isalpha(), words)))
             is_len = len(words) < 7
 
-            conditions = is_len and is_alpha 
+            conditions = is_len and is_alpha
 
             if not conditions: invalid_ents.add(ent)
 
@@ -382,6 +382,14 @@ class KG:
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
 
+    def pickle_kg(save_name):
+        try:
+            os.makedirs(directory)
+        except:
+            continue
+
+
+        pass
     def make(self, dir=''):
         self.add_docs_from_dir(dir)
         print("calling entity detection")
@@ -434,64 +442,14 @@ The GAO based its report on penetration tests the DoD itself undertook, as well 
 
 DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
-text = text.replace('\n', ' ')
+#text = text.replace('\n', ' ')
 kg = KG()
-kg.doc_dict = {1: nlp(text)}
+#kg.doc_dict = {1: nlp(text)}
 
 # print("ok")
-# kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-# # kg.make('Data/trump_russia/')
-print("calling entity detection")
-kg.entity_detection()
-print("number of entities now: {}".format(len(kg.entities)))
+# kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
+kg.make('Data/trump_russia/')
 
-print("calling coreference detection")
-kg.coreference_detection() #
-print("number of entities now: {}".format(len(kg.entities)))
-
-print("calling merge entities")
-kg.condense_entities()
-print("`number of entities now: {}".format(len(kg.entities)))
-
-print("calling triple extraction")
-kg.triple_extraction()
-print("number of entities now: {}".format(len(kg.entities)))
-
-
-
-
-print("#######PRINTING ENTITIES#######")
-
-for i in kg.entities:
-    print(kg.entities[i].name)
-    print(kg.entities[i].doc_appearances)
-
-
-print("#######PRINTING TRIPLES#######")
-for tup in kg.triples:
-    print(tup)
-
-kg.filter_entities()
-print("filter...number of entities now: {}".format(len(kg.entities)))
-
-print("making graph......")
-kg.construct_graph()
-print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
-plt.figure()
-nx.draw_networkx(kg.graph)
-
-
-print("summarizing graph......")
-kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05, kg.max_weight * 0.7)
-print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
-plt.figure()
-nx.draw_networkx(kg.sum_graph)
-
-
-for i in kg.sum_graph.nodes:
-    print(kg.sum_graph.nodes[i])
-
-plt.show()
 
 #TODO: back to text
 
