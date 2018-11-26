@@ -369,7 +369,7 @@ class KG:
             w = len(entity.doc_appearances)
 
             self.graph.nodes[entity.index]['weight'] = w
-            
+
             if w  > self.max_weight:
                 self.max_weight = w
 
@@ -410,8 +410,9 @@ class KG:
         #TODO: use median length alias, problem with NoneTypes
         #med_word = lambda x: x.sort(key=lambda w: len(w))[len(x)//2]
         #entity_strs = {id : med_word(list(ent.aliases)) for id, ent in self.entities.items()}
-        entity_strs = {id : ent.name for id, ent in self.entities.items()}
-        pickle.dump(entity_strs, open(path+'entites.p', 'wb'))
+        entity_strs = {id : {'text':ent.name, 'doc_apps':len(ent.doc_appearances)} \
+                            for id, ent in self.entities.items()}
+        pickle.dump(entity_strs, open(path+'entities.p', 'wb'))
 
     def make(self, dir=''):
         '''Runs the whole KG creation process.
@@ -446,7 +447,7 @@ class KG:
         for tup in self.triples:
             print(tup)
 
-        kg.filter_entities()
+        #kg.filter_entities()
         print("filter...number of entities now: {}".format(len(kg.entities)))
 
         print("making graph......")
@@ -491,8 +492,8 @@ for edge in kg.sum_graph.edges:
     e2 = kg.entities[edge[2]]
 
     for tup in kg.triples:
-        if tup[0] == e0.index and tup[2] == e1.index: 
-            sentence = "{} {} {}.".format(kg.entities[tup[0]].name, 
+        if tup[0] == e0.index and tup[2] == e1.index:
+            sentence = "{} {} {}.".format(kg.entities[tup[0]].name,
                 kg.entities[tup[1]].name, kg.entities[tup[2]].name)
             sum_list.append(sentence)
 
