@@ -24,6 +24,7 @@ nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
 
 
+
 def dfs_graph(g):
     '''
     takes in graph g and returns dfs traversal in ordered list
@@ -364,7 +365,9 @@ class KG:
         for id, entity in self.entities.items():
             self.graph.add_node(entity.index, name = entity.name)
             w = len(entity.doc_appearances)
+
             self.graph.nodes[entity.index]['weight'] = w
+            
             if w  > self.max_weight:
                 self.max_weight = w
 
@@ -493,6 +496,28 @@ for i in kg.sum_graph.nodes:
 
 plt.show()
 
-#TODO: back to text
+#return summary based off of edges
+
+sum_list = []
+for edge in kg.sum_graph.edges:
+
+    e0 = kg.entities[edge[0]]
+    e1 = kg.entities[edge[1]]
+    e2 = kg.entities[edge[2]]
+
+    for tup in kg.triples:
+        if tup[0] == e0.index and tup[2] == e1.index: 
+            sentence = "{} {} {}.".format(kg.entities[tup[0]].name, 
+                kg.entities[tup[1]].name, kg.entities[tup[2]].name)
+            sum_list.append(sentence)
+
+    #print((e0.index, e1.index, e2.index))
+    #print((e0.name, e1.name, e2.name))
+
+summary = " "
+for s in sum_list:
+    summary += (s + " ")
+
+print(summary)
 
 #pickle.dump(kg, open('kg.p', 'wb'))
