@@ -359,7 +359,10 @@ class KG:
                 self.triples.add((s,v,o))
 
     def construct_graph(self):
+        '''Constructs networkx graph from [triples] attribute and populates
+        other graph attributes'''
         #add each entity as node to graph
+        #TODO: more sophisticated weighting scheme
         for id, entity in self.entities.items():
             self.graph.add_node(entity.index, name = entity.name)
             w = len(entity.doc_appearances)
@@ -372,6 +375,8 @@ class KG:
             self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
     def add_docs_from_dir(self, dir):
+        '''Takes text files from a directory and converts them into spacy
+        document objects that population the [doc_dict] attribute'''
         if dir == '':
             dir = None
         for ix, doc in enumerate(os.listdir(dir)):
@@ -384,6 +389,9 @@ class KG:
                 self.doc_dict[ix] = spacy_text
 
     def pickle_kg(self, dir):
+        '''Pickles graph into raw networkx full and summary graphs plus raw
+        text representations of entities and relations.
+        Creates new directory in data directory to contain these files.'''
         kg_dir = dir + 'kg'
         try:
             os.makedirs(kg_dir)
@@ -403,6 +411,13 @@ class KG:
         pickle.dump(entity_strs, open(path+'entites.p', 'wb'))
 
     def make(self, dir=''):
+        '''Runs the whole KG creation process.
+        Outputs a pickled representation of the graph, summarized graph, and
+        raw text dictionaries of entities and relations.
+        dir : str - directory containing documents as seperate text files.
+                    ex: dir='data/politics/'
+        return : networkx MultiDiGraph of KG
+        '''
         self.add_docs_from_dir(dir)
         print("calling entity detection")
         self.entity_detection()
