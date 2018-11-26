@@ -156,16 +156,11 @@ class KG:
 
             words = list(map(lambda c: c.strip(), name.split(" ")))
             is_len = len(words) < 6
-
-
-<<<<<<< HEAD
+            is_alpha = all(list(map(lambda c: c.isalpha() == False, list(name))))
             conditions = is_len and is_alpha
-=======
-            is_alpha = any(list(map(lambda c: c.isalpha(), list(name))))
-            conditions = is_len and is_alpha 
->>>>>>> 4715c7fc89ae69851e81035ec4362bf0ddb57754
 
-            if not conditions: invalid_ents.add(ent)
+            if not conditions:
+                invalid_ents.add(ent)
 
         for ent in invalid_ents:
             self.entities.pop(ent)
@@ -381,19 +376,32 @@ class KG:
             dir = None
         for ix, doc in enumerate(os.listdir(dir)):
             print(dir + doc)
+            if doc[-3:] != 'txt':
+                continue
             with open(dir + doc, 'r', encoding='utf-8') as f:
                 text = f.read()
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
 
-    def pickle_kg(save_name):
+    def pickle_kg(self, dir):
+        kg_dir = dir + 'kg'
         try:
-            os.makedirs(directory)
+            os.makedirs(kg_dir)
         except:
-            continue
+            pass
+        path = kg_dir + '/'
+        pickle.dump(self.graph, open(path+'graph.p', 'wb'))
+        pickle.dump(self.sum_graph, open(path+'sum_graph.p', 'wb'))
 
+        relation_strs = {id : r['span'].text for id, r in self.relations.items()}
+        pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
 
-        pass
+        #TODO: use median length alias, problem with NoneTypes
+        #med_word = lambda x: x.sort(key=lambda w: len(w))[len(x)//2]
+        #entity_strs = {id : med_word(list(ent.aliases)) for id, ent in self.entities.items()}
+        entity_strs = {id : ent.name for id, ent in self.entities.items()}
+        pickle.dump(entity_strs, open(path+'entites.p', 'wb'))
+
     def make(self, dir=''):
         self.add_docs_from_dir(dir)
         print("calling entity detection")
@@ -430,7 +438,7 @@ class KG:
         plt.figure()
         nx.draw_networkx(self.graph)
         save_name = 'Graphs/' + [x for x in dir.split('/') if len(x)>0][-1] + '_graph.p'
-        pickle.dump(self.graph, open(save_name, 'wb'))
+        self.pickle_kg(dir)
         return self.graph
 
 
