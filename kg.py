@@ -17,8 +17,8 @@ import graph_summarize as cp
 import matplotlib.pyplot as plt
 from spacy import displacy
 from collections import Counter, deque
-from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from networkx import algorithms as algo
+from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
@@ -157,8 +157,8 @@ class KG:
 
             words = list(map(lambda c: c.strip(), name.split(" ")))
             is_len = len(words) < 6
-            is_alpha = all(list(map(lambda c: c.isalpha() == False, list(name))))
-            conditions = is_len and is_alpha
+            is_not_alpha = all(list(map(lambda c: c.isalpha() == False, list(name))))
+            conditions = is_len and not is_not_alpha
 
             if not conditions:
                 invalid_ents.add(ent)
@@ -401,8 +401,8 @@ class KG:
         except:
             pass
         path = kg_dir + '/'
-        pickle.dump(self.graph, open(path+'graph.p', 'wb'))
-        pickle.dump(self.sum_graph, open(path+'sum_graph.p', 'wb'))
+        nx.write_gpickle(self.graph, open(path+'graph.p', 'wb'))
+        #nx.write_gpickle(self.sum_graph, open(path+'sum_graph.p', 'wb'))
 
         relation_strs = {id : r['span'].text for id, r in self.relations.items()}
         pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
@@ -420,7 +420,7 @@ class KG:
         raw text dictionaries of entities and relations.
         dir : str - directory containing documents as seperate text files.
                     ex: dir='data/politics/'
-        return : networkx MultiDiGraph of KG
+        return : networkx MultiDiGraph of summarized KG
         '''
         self.add_docs_from_dir(dir)
         print("calling entity detection")
@@ -447,18 +447,19 @@ class KG:
         for tup in self.triples:
             print(tup)
 
-        #kg.filter_entities()
+        kg.filter_entities()
         print("filter...number of entities now: {}".format(len(kg.entities)))
 
         print("making graph......")
         self.construct_graph()
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
                                                        self.graph.number_of_edges()))
+
+        self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, kg.max_weight * 0.7)
         plt.figure()
-        nx.draw_networkx(self.graph)
-        save_name = 'Graphs/' + [x for x in dir.split('/') if len(x)>0][-1] + '_graph.p'
+        nx.draw_networkx(self.sum_graph)
         self.pickle_kg(dir)
-        return self.graph
+        return self.sum_graph
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.

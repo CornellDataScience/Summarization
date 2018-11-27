@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 
 
 def unpickle_kg(dir):
-    G = pickle.load(open(dir + 'graph.p', 'rb'))
-    sum_G = pickle.load(open(dir + 'sum_graph.p', 'rb'))
+    G = nx.read_gpickle(open(dir + 'graph.p', 'rb'))
+    sum_G = nx.read_gpickle(open(dir + 'sum_graph.p', 'rb'))
     relations = pickle.load(open(dir + 'relations.p', 'rb'))
     entities = pickle.load(open(dir + 'entities.p', 'rb'))
     return G, sum_G, relations, entities
@@ -25,7 +25,7 @@ def display_graph(dir=''):
     for k, d in sorted_ents:
         print('ID:',k, '  Apps:',d['doc_apps'], '   Text:', d['text'])
     for e in G.edges():
-        print(e)
+        print('Edge:', entities[e[0]]['text'], '-->', entities[e[1]]['text'])
     plt.figure()
     nx.draw_networkx(G)
     plt.show()
