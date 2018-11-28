@@ -2,7 +2,6 @@
 """
 Cornell Data Science Fall 2018
 Text summarization group: Wes Gurnee, Qian Huang, Jane Zhang
-
 This script generates knowledge graphs from unstructured text which has been
 inspired by the T2KG paper."""
 import re
@@ -17,8 +16,8 @@ import graph_summarize as cp
 import matplotlib.pyplot as plt
 from spacy import displacy
 from collections import Counter, deque
-from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 from networkx import algorithms as algo
+from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 
 nlp = spacy.load('en_coref_md') #
 #nlp = en_core_web_sm.load()
@@ -157,12 +156,11 @@ class KG:
 
             words = list(map(lambda c: c.strip(), name.split(" ")))
             is_len = len(words) < 6
+            is_not_alpha = all(list(map(lambda c: c.isalpha() == False, list(name))))
+            conditions = is_len and not is_not_alpha
 
-
-            is_alpha = any(list(map(lambda c: c.isalpha(), list(name))))
-            conditions = is_len and is_alpha 
-
-            if not conditions: invalid_ents.add(ent)
+            if not conditions:
+                invalid_ents.add(ent)
 
         for ent in invalid_ents:
             self.entities.pop(ent)
@@ -312,7 +310,6 @@ class KG:
         '''
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
-
         each triple object is tuple of span objects
         '''
         #identify obvious subject-verb-object triples
@@ -361,13 +358,16 @@ class KG:
                 self.triples.add((s,v,o))
 
     def construct_graph(self):
+        '''Constructs networkx graph from [triples] attribute and populates
+        other graph attributes'''
         #add each entity as node to graph
+        #TODO: more sophisticated weighting scheme
         for id, entity in self.entities.items():
             self.graph.add_node(entity.index, name = entity.name)
             w = len(entity.doc_appearances)
 
             self.graph.nodes[entity.index]['weight'] = w
-            
+
             if w  > self.max_weight:
                 self.max_weight = w
 
@@ -376,18 +376,51 @@ class KG:
             if triple[0] in self.entities and triple[2] in self.entities:
                 self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
-
     def add_docs_from_dir(self, dir):
+        '''Takes text files from a directory and converts them into spacy
+        document objects that population the [doc_dict] attribute'''
         if dir == '':
             dir = None
         for ix, doc in enumerate(os.listdir(dir)):
             print(dir + doc)
+            if doc[-3:] != 'txt':
+                continue
             with open(dir + doc, 'r', encoding='utf-8') as f:
                 text = f.read()
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
 
+    def pickle_kg(self, dir):
+        '''Pickles graph into raw networkx full and summary graphs plus raw
+        text representations of entities and relations.
+        Creates new directory in data directory to contain these files.'''
+        kg_dir = dir + 'kg'
+        try:
+            os.makedirs(kg_dir)
+        except:
+            pass
+        path = kg_dir + '/'
+        nx.write_gpickle(self.graph, open(path+'graph.p', 'wb'))
+        #nx.write_gpickle(self.sum_graph, open(path+'sum_graph.p', 'wb'))
+
+        relation_strs = {id : r['span'].text for id, r in self.relations.items()}
+        pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
+
+        #TODO: use median length alias, problem with NoneTypes
+        #med_word = lambda x: x.sort(key=lambda w: len(w))[len(x)//2]
+        #entity_strs = {id : med_word(list(ent.aliases)) for id, ent in self.entities.items()}
+        entity_strs = {id : {'text':ent.name, 'doc_apps':len(ent.doc_appearances)} \
+                            for id, ent in self.entities.items()}
+        pickle.dump(entity_strs, open(path+'entities.p', 'wb'))
+
     def make(self, dir=''):
+        '''Runs the whole KG creation process.
+        Outputs a pickled representation of the graph, summarized graph, and
+        raw text dictionaries of entities and relations.
+        dir : str - directory containing documents as seperate text files.
+                    ex: dir='data/politics/'
+        return : networkx MultiDiGraph of summarized KG
+        '''
         self.add_docs_from_dir(dir)
         print("calling entity detection")
         self.entity_detection()
@@ -420,83 +453,29 @@ class KG:
         self.construct_graph()
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
                                                        self.graph.number_of_edges()))
+
+        self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, kg.max_weight * 0.7)
         plt.figure()
-        nx.draw_networkx(self.graph)
-        save_name = 'Graphs/' + [x for x in dir.split('/') if len(x)>0][-1] + '_graph.p'
-        pickle.dump(self.graph, open(save_name, 'wb'))
-        return self.graph
+        nx.draw_networkx(self.sum_graph)
+        self.pickle_kg(dir)
+        return self.sum_graph
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
-
 Specifically, the report concludes that almost all weapons that the DoD tested between 2012 and 2017 have “mission critical” cyber vulnerabilities. “Using relatively simple tools and techniques, testers were able to take control of systems and largely operate undetected, due in part to basic issues such as poor password management and unencrypted communications,” the report states. And yet, perhaps more alarmingly, the officials who oversee those systems appeared dismissive of the results.
-
 The GAO released its report Tuesday, in response to a request from the Senate Armed Services Committee ahead of a planned $1.66 trillion in spending by the Defense Department to develop its current weapons systems. Subtitled "DoD Just Beginning to Grapple with Scale of Vulnerabilities," the report finds that the department "likely has an entire generation of systems that were designed and built without adequately considering cybersecurity." Neither Armed Services Committee chairman James Inhofe nor ranking member Jack Reed responded to requests for comment.
-
 The GAO based its report on penetration tests the DoD itself undertook, as well as interviews with officials at various DoD offices. Its findings should be a wakeup call for the Defense Department, which the GAO describes as only now beginning to grapple with the importance of cybersecurity, and the scale of vulnerabilities in its weapons systems.
-
 “I will say that the GAO can be prone to cyber hyperbole, but unless their sampling or methodology were way off or deliberately misleading, DoD has a very grave problem on its hands,” says R. David Edelman, who served as special assistant to former President Barack Obama on cybersecurity and tech policy. “In the private sector, this is the sort of report that would put the CEO on death watch.”
-
 DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
-text = text.replace('\n', ' ')
+#text = text.replace('\n', ' ')
 kg = KG()
-kg.doc_dict = {1: nlp(text)}
+#kg.doc_dict = {1: nlp(text)}
 
 # print("ok")
-# kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-# # kg.make('Data/trump_russia/')
-print("calling entity detection")
-kg.entity_detection()
-print("number of entities now: {}".format(len(kg.entities)))
+# kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
+kg.make('Data/trump_russia/')
 
-print("calling coreference detection")
-kg.coreference_detection() #
-print("number of entities now: {}".format(len(kg.entities)))
-
-print("calling merge entities")
-kg.condense_entities()
-print("`number of entities now: {}".format(len(kg.entities)))
-
-print("calling triple extraction")
-kg.triple_extraction()
-print("number of entities now: {}".format(len(kg.entities)))
-
-
-
-
-print("#######PRINTING ENTITIES#######")
-
-for i in kg.entities:
-    print(kg.entities[i].name)
-    print(kg.entities[i].doc_appearances)
-
-
-print("#######PRINTING TRIPLES#######")
-for tup in kg.triples:
-    print(tup)
-
-kg.filter_entities()
-print("filter...number of entities now: {}".format(len(kg.entities)))
-
-print("making graph......")
-kg.construct_graph()
-print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
-plt.figure()
-nx.draw_networkx(kg.graph)
-
-
-print("summarizing graph......")
-kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05, kg.max_weight * 0.7)
-print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
-plt.figure()
-nx.draw_networkx(kg.sum_graph)
-
-
-for i in kg.sum_graph.nodes:
-    print(kg.sum_graph.nodes[i])
-
-plt.show()
 
 #return summary based off of edges
 
@@ -508,8 +487,8 @@ for edge in kg.sum_graph.edges:
     e2 = kg.entities[edge[2]]
 
     for tup in kg.triples:
-        if tup[0] == e0.index and tup[2] == e1.index: 
-            sentence = "{} {} {}.".format(kg.entities[tup[0]].name, 
+        if tup[0] == e0.index and tup[2] == e1.index:
+            sentence = "{} {} {}.".format(kg.entities[tup[0]].name,
                 kg.entities[tup[1]].name, kg.entities[tup[2]].name)
             sum_list.append(sentence)
 
