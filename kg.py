@@ -464,8 +464,30 @@ class KG:
         nx.draw_networkx(kg.sum_graph)
         plt.show()
 
-        self.pickle_kg(dir)
-        return self.sum_graph
+        #return summary based off of edges
+        sum_list = []
+        for edge in self.sum_graph.edges:
+
+            print(edge)
+
+            e0 = self.entities[edge[0]]
+            e1 = self.entities[edge[1]]
+
+            for tup in kg.triples:
+                try:
+                    if tup[0] == e0.index and tup[2] == e1.index:
+                        sentence = "{} {} {}.".format(kg.entities[tup[0]].name,
+                            kg.entities[tup[1]].name, kg.entities[tup[2]].name)
+                        sum_list.append(sentence)
+
+                except:
+                    continue
+
+        summary = " "
+        for s in sum_list:
+            summary += (s + " ")
+
+        return self.sum_graph, summary
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
@@ -481,35 +503,10 @@ kg = KG()
 
 # print("ok")
 # kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-graph = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
 
-
-'''
-
-#return summary based off of edges
-
-sum_list = []
-for edge in kg.sum_graph.edges:
-
-    e0 = kg.entities[edge[0]]
-    e1 = kg.entities[edge[1]]
-    e2 = kg.entities[edge[2]]
-
-    for tup in kg.triples:
-        if tup[0] == e0.index and tup[2] == e1.index:
-            sentence = "{} {} {}.".format(kg.entities[tup[0]].name,
-                kg.entities[tup[1]].name, kg.entities[tup[2]].name)
-            sum_list.append(sentence)
-
-    #print((e0.index, e1.index, e2.index))
-    #print((e0.name, e1.name, e2.name))
-
-summary = " "
-for s in sum_list:
-    summary += (s + " ")
-
+retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
+graph = retval[0]
+summary = retval[1]
 print(summary)
 
 #pickle.dump(kg, open('kg.p', 'wb'))
-
-'''
