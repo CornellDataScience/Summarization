@@ -451,12 +451,19 @@ class KG:
 
         print("making graph......")
         self.construct_graph()
+        nx.draw_networkx(kg.graph)
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
                                                        self.graph.number_of_edges()))
 
+        print("summarizing graph......")
         self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, kg.max_weight * 0.7)
+        print("summarized graph has {} nodes and {} edges".format(self.sum_graph.number_of_nodes(),\
+                                                       self.sum_graph.number_of_edges()))
+        
         plt.figure()
-        nx.draw_networkx(self.sum_graph)
+        nx.draw_networkx(kg.sum_graph)
+        plt.show()
+
         self.pickle_kg(dir)
         return self.sum_graph
 
@@ -474,8 +481,10 @@ kg = KG()
 
 # print("ok")
 # kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-kg.make('Data/trump_russia/')
+graph = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
 
+
+'''
 
 #return summary based off of edges
 
@@ -502,3 +511,5 @@ for s in sum_list:
 print(summary)
 
 #pickle.dump(kg, open('kg.p', 'wb'))
+
+'''
