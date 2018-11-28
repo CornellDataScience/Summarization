@@ -157,11 +157,12 @@ class KG:
 
             words = list(map(lambda c: c.strip(), name.split(" ")))
             is_len = len(words) < 6
-            is_alpha = all(list(map(lambda c: c.isalpha() == False, list(name))))
-            conditions = is_len and is_alpha
 
-            if not conditions:
-                invalid_ents.add(ent)
+
+            is_alpha = any(list(map(lambda c: c.isalpha(), list(name))))
+            conditions = is_len and is_alpha 
+
+            if not conditions: invalid_ents.add(ent)
 
         for ent in invalid_ents:
             self.entities.pop(ent)
@@ -372,38 +373,19 @@ class KG:
 
         #assuming each subj, obj in triple is existing node, adds edges
         for triple in self.triples:
-            self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
+            if triple[0] in self.entities and triple[2] in self.entities:
+                self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
+
 
     def add_docs_from_dir(self, dir):
         if dir == '':
             dir = None
         for ix, doc in enumerate(os.listdir(dir)):
             print(dir + doc)
-            if doc[-3:] != 'txt':
-                continue
             with open(dir + doc, 'r', encoding='utf-8') as f:
                 text = f.read()
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
-
-    def pickle_kg(self, dir):
-        kg_dir = dir + 'kg'
-        try:
-            os.makedirs(kg_dir)
-        except:
-            pass
-        path = kg_dir + '/'
-        pickle.dump(self.graph, open(path+'graph.p', 'wb'))
-        pickle.dump(self.sum_graph, open(path+'sum_graph.p', 'wb'))
-
-        relation_strs = {id : r['span'].text for id, r in self.relations.items()}
-        pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
-
-        #TODO: use median length alias, problem with NoneTypes
-        #med_word = lambda x: x.sort(key=lambda w: len(w))[len(x)//2]
-        #entity_strs = {id : med_word(list(ent.aliases)) for id, ent in self.entities.items()}
-        entity_strs = {id : ent.name for id, ent in self.entities.items()}
-        pickle.dump(entity_strs, open(path+'entites.p', 'wb'))
 
     def make(self, dir=''):
         self.add_docs_from_dir(dir)
@@ -441,7 +423,7 @@ class KG:
         plt.figure()
         nx.draw_networkx(self.graph)
         save_name = 'Graphs/' + [x for x in dir.split('/') if len(x)>0][-1] + '_graph.p'
-        self.pickle_kg(dir)
+        pickle.dump(self.graph, open(save_name, 'wb'))
         return self.graph
 
 
@@ -457,14 +439,64 @@ The GAO based its report on penetration tests the DoD itself undertook, as well 
 
 DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
-#text = text.replace('\n', ' ')
+text = text.replace('\n', ' ')
 kg = KG()
-#kg.doc_dict = {1: nlp(text)}
+kg.doc_dict = {1: nlp(text)}
 
 # print("ok")
-# kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
-kg.make('Data/trump_russia/')
+# kg.add_docs_from_dir('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
+# # kg.make('Data/trump_russia/')
+print("calling entity detection")
+kg.entity_detection()
+print("number of entities now: {}".format(len(kg.entities)))
 
+print("calling coreference detection")
+kg.coreference_detection() #
+print("number of entities now: {}".format(len(kg.entities)))
+
+print("calling merge entities")
+kg.condense_entities()
+print("`number of entities now: {}".format(len(kg.entities)))
+
+print("calling triple extraction")
+kg.triple_extraction()
+print("number of entities now: {}".format(len(kg.entities)))
+
+
+
+
+print("#######PRINTING ENTITIES#######")
+
+for i in kg.entities:
+    print(kg.entities[i].name)
+    print(kg.entities[i].doc_appearances)
+
+
+print("#######PRINTING TRIPLES#######")
+for tup in kg.triples:
+    print(tup)
+
+kg.filter_entities()
+print("filter...number of entities now: {}".format(len(kg.entities)))
+
+print("making graph......")
+kg.construct_graph()
+print("graph has {} nodes and {} edges".format(kg.graph.number_of_nodes(), kg.graph.number_of_edges()))
+plt.figure()
+nx.draw_networkx(kg.graph)
+
+
+print("summarizing graph......")
+kg.sum_graph = cp.greedy_summarize(kg.graph, 8, 0.05, kg.max_weight * 0.7)
+print("graph has {} nodes and {} edges".format(kg.sum_graph.number_of_nodes(), kg.sum_graph.number_of_edges()))
+plt.figure()
+nx.draw_networkx(kg.sum_graph)
+
+
+for i in kg.sum_graph.nodes:
+    print(kg.sum_graph.nodes[i])
+
+plt.show()
 
 #return summary based off of edges
 
