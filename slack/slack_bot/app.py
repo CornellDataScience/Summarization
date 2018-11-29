@@ -69,13 +69,7 @@ def _event_handler(event_type, slack_event):
             #r = requests.post("https://slack.com/api/chat.update", data)
             #print(r.text)
             s = summary(message.get("text"), ts)
-            data = {
-                "token": "xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m",
-                "channel": message.get("channel"),
-                "text": "It is better to have a summary...",
-                "as_user": True,
-                "thread_ts": ts,
-                "attachments": json.dumps([
+            attachments = [
                     {
                         "title": "Keywords",
                         "text": s[0]
@@ -83,12 +77,14 @@ def _event_handler(event_type, slack_event):
                     {
                         "title": "Key sentences",
                         "text": s[1]
-                    },
-                    {
+                    }]
+
+            if s[2] != None:
+                attachments.append({
                         "title": "Graph",
                         "image_url": "http://128.84.48.178/get_image?ts=" + s[2]
-                    },
-                    {
+                    })
+            attachments.append({
                         "fallback": "Do you like the summary?",
                         "title": "Do you like the summary?",
                         "callback_id": "feedback",
@@ -108,8 +104,15 @@ def _event_handler(event_type, slack_event):
                                 "value": "bad"
                             }
                         ]
-                    }
-                ])
+                    })
+
+            data = {
+                "token": "xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m",
+                "channel": message.get("channel"),
+                "text": "It is better to have a summary...",
+                "as_user": True,
+                "thread_ts": ts,
+                "attachments": json.dumps(attachments)
             }
             print(data)
             r = requests.post("https://slack.com/api/chat.postMessage", data)
@@ -210,10 +213,9 @@ def hears():
 @app.route('/get_image')
 def get_image():
     # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
-    # print(request.args.get('ts'))
-    return send_file("placeholder.png", mimetype='image/gif')
+    return send_file("kg/"+request.args.get('ts') +".png", mimetype='image/gif')
 
-@app.route('/interact')
+@app.route('/interact', methods=["POST"])
 def interact():
     # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
     print("interact request:")

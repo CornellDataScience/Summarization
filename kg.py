@@ -409,6 +409,10 @@ class KG:
                 spacy_text = nlp(text)
                 self.doc_dict[ix] = spacy_text
 
+    def add_docs_from_text(self, text):
+        spacy_text = nlp(text)
+        self.doc_dict[0] = spacy_text
+
     def pickle_kg(self, dir):
         '''Pickles graph into raw networkx full and summary graphs plus raw
         text representations of entities and relations.
@@ -432,7 +436,7 @@ class KG:
                             for id, ent in self.entities.items()}
         pickle.dump(entity_strs, open(path+'entities.p', 'wb'))
 
-    def make(self, dir=''):
+    def make(self, dir='', text = None):
         '''Runs the whole KG creation process.
         Outputs a pickled representation of the graph, summarized graph, and
         raw text dictionaries of entities and relations.
@@ -440,7 +444,11 @@ class KG:
                     ex: dir='data/politics/'
         return : networkx MultiDiGraph of summarized KG
         '''
-        self.add_docs_from_dir(dir)
+        if text != None:
+            self.add_docs_from_text(text)
+        else:
+            self.add_docs_from_dir(dir)
+
         print("calling entity detection")
         self.entity_detection()
         print("number of entities now: {}".format(len(kg.entities)))
@@ -471,7 +479,7 @@ class KG:
 
         print("making graph......")
         self.construct_graph()
-        nx.draw_networkx(kg.graph)
+        # nx.draw_networkx(kg.graph)
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
                                                        self.graph.number_of_edges()))
 
@@ -486,12 +494,12 @@ class KG:
         self.construct_wordGraph(self.sum_graph)
         plt.figure()
 
-        nx.draw_networkx(kg.sum_graph)
+        # nx.draw_networkx(kg.sum_graph)
         #plt.show()
 
         plt.figure()
-        nx.draw_networkx(kg.word_graph)
-        plt.show()
+        # nx.draw_networkx(kg.word_graph)
+        # plt.show()
 
         #return summary based off of edges
         sum_list = []
@@ -518,24 +526,27 @@ class KG:
 
         return self.word_graph, summary
 
+if __name__ == "__main__":
 
-text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
-Specifically, the report concludes that almost all weapons that the DoD tested between 2012 and 2017 have “mission critical” cyber vulnerabilities. “Using relatively simple tools and techniques, testers were able to take control of systems and largely operate undetected, due in part to basic issues such as poor password management and unencrypted communications,” the report states. And yet, perhaps more alarmingly, the officials who oversee those systems appeared dismissive of the results.
-The GAO released its report Tuesday, in response to a request from the Senate Armed Services Committee ahead of a planned $1.66 trillion in spending by the Defense Department to develop its current weapons systems. Subtitled "DoD Just Beginning to Grapple with Scale of Vulnerabilities," the report finds that the department "likely has an entire generation of systems that were designed and built without adequately considering cybersecurity." Neither Armed Services Committee chairman James Inhofe nor ranking member Jack Reed responded to requests for comment.
-The GAO based its report on penetration tests the DoD itself undertook, as well as interviews with officials at various DoD offices. Its findings should be a wakeup call for the Defense Department, which the GAO describes as only now beginning to grapple with the importance of cybersecurity, and the scale of vulnerabilities in its weapons systems.
-“I will say that the GAO can be prone to cyber hyperbole, but unless their sampling or methodology were way off or deliberately misleading, DoD has a very grave problem on its hands,” says R. David Edelman, who served as special assistant to former President Barack Obama on cybersecurity and tech policy. “In the private sector, this is the sort of report that would put the CEO on death watch.”
-DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
+    text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
+    Specifically, the report concludes that almost all weapons that the DoD tested between 2012 and 2017 have “mission critical” cyber vulnerabilities. “Using relatively simple tools and techniques, testers were able to take control of systems and largely operate undetected, due in part to basic issues such as poor password management and unencrypted communications,” the report states. And yet, perhaps more alarmingly, the officials who oversee those systems appeared dismissive of the results.
+    The GAO released its report Tuesday, in response to a request from the Senate Armed Services Committee ahead of a planned $1.66 trillion in spending by the Defense Department to develop its current weapons systems. Subtitled "DoD Just Beginning to Grapple with Scale of Vulnerabilities," the report finds that the department "likely has an entire generation of systems that were designed and built without adequately considering cybersecurity." Neither Armed Services Committee chairman James Inhofe nor ranking member Jack Reed responded to requests for comment.
+    The GAO based its report on penetration tests the DoD itself undertook, as well as interviews with officials at various DoD offices. Its findings should be a wakeup call for the Defense Department, which the GAO describes as only now beginning to grapple with the importance of cybersecurity, and the scale of vulnerabilities in its weapons systems.
+    “I will say that the GAO can be prone to cyber hyperbole, but unless their sampling or methodology were way off or deliberately misleading, DoD has a very grave problem on its hands,” says R. David Edelman, who served as special assistant to former President Barack Obama on cybersecurity and tech policy. “In the private sector, this is the sort of report that would put the CEO on death watch.”
+    DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
-#text = text.replace('\n', ' ')
-kg = KG()
-#kg.doc_dict = {1: nlp(text)}
+    print("ok")
 
-# print("ok")
-# kg.make('/Users/qian/Desktop/CDS-Deep Learning/summarization/Summarization/Data/')
+    #text = text.replace('\n', ' ')
+    kg = KG()
+    #kg.doc_dict = {1: nlp(text)}
 
-retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
-graph = retval[0]
-summary = retval[1]
-print(summary) #this doesn't make any sense
+    # print("ok")
+    kg.make(text = text)
 
-#pickle.dump(kg, open('kg.p', 'wb'))
+    retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
+    graph = retval[0]
+    summary = retval[1]
+    print(summary) #this doesn't make any sense
+
+    #pickle.dump(kg, open('kg.p', 'wb'))
