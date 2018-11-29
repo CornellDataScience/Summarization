@@ -2,15 +2,15 @@
 import requests
 import json
 from . import bot
-from flask import Flask, request, make_response, render_template
+from flask import Flask, request, make_response, render_template, send_file
 
 pyBot = bot.Bot()
 slack = pyBot.client
 
 app = Flask(__name__)
 
-def process_text(text): 
-    return "It is better to have a summary for this ... "
+def summary(text, ts):
+    return None
 
 def _event_handler(event_type, slack_event):
     """
@@ -68,17 +68,56 @@ def _event_handler(event_type, slack_event):
             #}
             #r = requests.post("https://slack.com/api/chat.update", data)
             #print(r.text)
-            data = { 
-                'token':"xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m", 
-                "channel":message.get("channel"),
-                "text": process_text( message.get("text")),
+            s = summary(message.get("text"), ts)
+            data = {
+                'token': "xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m",
+                "channel": message.get("channel"),
+                "text": "It is better to have a summary...",
                 "as_user": True,
-                "thread_ts": ts,            
-                "reply_broadcast": True
+                "thread_ts": ts,
+                "attachments": [
+                    {
+                        "title": "Keywords",
+                        "text": s[0]
+                    },
+                    {
+                        "title": "Key sentences",
+                        "text": s[1]
+                    },
+                    {
+                        "title": "Graph",
+                        "image_url": "http://128.84.48.178/get_image?ts=" + s[2]
+                    },
+                    {
+                        "fallback": "Do you like the summary?",
+                        "title": "Do you like the summary?",
+                        "callback_id": "feedback",
+                        "color": "#3AA3E3",
+                        "attachment_type": "default",
+                        "actions": [
+                            {
+                                "name": "yes",
+                                "text": "yes",
+                                "type": "button",
+                                "value": "good"
+                            },
+                            {
+                                "name": "no",
+                                "text": "No",
+                                "type": "button",
+                                "value": "bad"
+                            }
+                        ]
+                    }
+                ]
             }
             r = requests.post("https://slack.com/api/chat.postMessage", data)
-            print(r.text)
             return make_response("respond", 200,)
+
+    if event_type == "interactive_message":
+        print(slack_event["actions"])
+        print(slack_event["original_message"])
+
     # ============= Reaction Added Events ============= #
     # If the user has added an emoji reaction to the onboarding message
     #elif event_type == "reaction_added":
@@ -170,6 +209,12 @@ def hears():
     return make_response("[NO EVENT IN SLACK REQUEST] These are not the droids\
                          you're looking for.", 404, {"X-Slack-No-Retry": 1})
 
+
+@app.route('/get_image')
+def get_image():
+    # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
+    print(request.args.get('ts'))
+    return send_file("placeholder.png", mimetype='image/gif')
 
 if __name__ == '__main__':
     app.run(debug=True)
