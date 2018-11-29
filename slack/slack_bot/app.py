@@ -48,7 +48,7 @@ def _event_handler(event_type, slack_event):
         print(str(slack_event))
         user = slack_event["event"].get("user")
         message = slack_event["event"]
-        if ((not "bot_id" in message) and "text" in message and len(message["text"].split()) > 50):
+        if ((not "bot_id" in message) and "text" in message and len(message["text"].split()) > 100):
             ts = message.get("ts")
             update_ts = str(float(message.get("ts")) + 0.0000001)
             # update, fail authentification...
@@ -84,13 +84,10 @@ def _event_handler(event_type, slack_event):
             if s[2] != "N/A":
                 attachments.append({
                         "title": "Graph",
+                        "text": s[2]+".png",
                         "image_url": "http://128.84.48.178/get_image?ts=" + s[2]
                     })
-            survey_link = "https://docs.google.com/forms/d/e/1FAIpQLSf486Jnksu4NDjk4lQCeA-SQ6SqFFDfCVund-zZr-BovXE8uw/viewform?" \
-            "entry.1518028795="+text+"&" \
-            "entry.429608591="+ s[0] +"&" \
-            "entry.546721641="+s[1]+"&" \
-            "entry.1905016871=" + s[2] + ""
+            survey_link = "https://docs.google.com/forms/d/e/1FAIpQLSf486Jnksu4NDjk4lQCeA-SQ6SqFFDfCVund-zZr-BovXE8uw/viewform?usp=sf_link" 
             attachments.append({
                         "fallback": "Evaluate our summary!",
                         "title": "Evaluate our summary!",

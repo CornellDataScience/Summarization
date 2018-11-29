@@ -484,7 +484,7 @@ class KG:
                                                        self.graph.number_of_edges()))
 
         print("summarizing graph......")
-        self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, kg.max_weight * 0.7)
+        self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, self.max_weight * 0.7)
         print("summarized graph has {} nodes and {} edges".format(self.sum_graph.number_of_nodes(),\
                                                        self.sum_graph.number_of_edges()))
         
@@ -492,12 +492,12 @@ class KG:
 
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph)
-        plt.figure()
+        #plt.figure()
 
         # nx.draw_networkx(kg.sum_graph)
         #plt.show()
 
-        plt.figure()
+        #plt.figure()
         # nx.draw_networkx(kg.word_graph)
         # plt.show()
 
