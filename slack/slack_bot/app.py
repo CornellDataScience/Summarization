@@ -3,6 +3,7 @@ import requests
 import json
 from . import bot
 from flask import Flask, jsonify, request, make_response, render_template, send_file
+import urllib.parse as urlparse
 
 pyBot = bot.Bot()
 slack = pyBot.client
@@ -217,10 +218,11 @@ def get_image():
 
 @app.route('/interact', methods=["POST"])
 def interact():
-    # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
-    print("interact request:")
-    print(request.data)
-
+    #print("interact request:")
+    #print(urlparse.parse_qs(request.get_data()))
+    payload = json.loads(urlparse.parse_qs(request.get_data())[b'payload'][0])
+    print(payload)
+    return make_response("",200,)
 
 if __name__ == '__main__':
     app.run(debug=True)
