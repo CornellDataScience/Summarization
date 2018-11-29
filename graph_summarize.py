@@ -30,7 +30,7 @@ def bfs_expansion(G, source, depth_limit=None):
 def greedy_summarize(G, k, c, degree_weight):
     selected = []
     dom = []
-    print("g1: "  + str(G.nodes[1]))
+    #print("g1: "  + str(G.nodes[1]))
     largest_degree_vs = sorted(G.nodes.keys(), key=lambda i: G.nodes[i]['weight'] + G.degree()[i] * degree_weight) [-k:]
     for i in largest_degree_vs:
         depth = int(G.nodes[i]['weight'] * c)
