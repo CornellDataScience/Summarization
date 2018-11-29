@@ -485,8 +485,9 @@ class KG:
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph)
         plt.figure()
+
         nx.draw_networkx(kg.sum_graph)
-        plt.show()
+        #plt.show()
 
         plt.figure()
         nx.draw_networkx(kg.word_graph)
