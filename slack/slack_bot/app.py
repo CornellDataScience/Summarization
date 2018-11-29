@@ -214,7 +214,7 @@ def hears():
 @app.route('/get_image')
 def get_image():
     # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
-    return send_file("kg/"+request.args.get('ts') +".png", mimetype='image/gif')
+    return send_file("/home/deeplearning_1/Summarization/kg/"+request.args.get('ts') +".png", mimetype='image/gif')
 
 @app.route('/interact', methods=["POST"])
 def interact():
