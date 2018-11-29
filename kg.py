@@ -451,22 +451,22 @@ class KG:
 
         print("calling entity detection")
         self.entity_detection()
-        print("number of entities now: {}".format(len(kg.entities)))
+        print("number of entities now: {}".format(len(self.entities)))
 
         print("calling coreference detection")
         self.coreference_detection() #
-        print("number of entities now: {}".format(len(kg.entities)))
+        print("number of entities now: {}".format(len(self.entities)))
 
         print("calling merge entities")
         self.condense_entities()
-        print("number of entities now: {}".format(len(kg.entities)))
+        print("number of entities now: {}".format(len(self.entities)))
 
         print("calling triple extraction")
         self.triple_extraction()
-        print("number of entities now: {}".format(len(kg.entities)))
+        print("number of entities now: {}".format(len(self.entities)))
 
-        kg.filter_entities()
-        print("filter...number of entities now: {}".format(len(kg.entities)))
+        self.filter_entities()
+        print("filter...number of entities now: {}".format(len(self.entities)))
 
         print("#######PRINTING ENTITIES#######")
         for i in self.entities:
@@ -510,11 +510,11 @@ class KG:
             e0 = self.entities[edge[0]]
             e1 = self.entities[edge[1]]
 
-            for tup in kg.triples:
+            for tup in self.triples:
                 try:
                     if tup[0] == e0.index and tup[2] == e1.index:
-                        sentence = "{} {} {}.".format(kg.entities[tup[0]].name,
-                            kg.entities[tup[1]].name, kg.entities[tup[2]].name)
+                        sentence = "{} {} {}.".format(self.entities[tup[0]].name,
+                                                      self.entities[tup[1]].name, self.entities[tup[2]].name)
                         sum_list.append(sentence)
 
                 except:
