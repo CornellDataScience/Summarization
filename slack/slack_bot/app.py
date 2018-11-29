@@ -45,7 +45,7 @@ def _event_handler(event_type, slack_event):
     # message. We'll also need to check that this is a message that has been
     # shared by looking into the attachments for "is_shared".
     if event_type == "message":
-        print(str(slack_event))
+        #print(str(slack_event))
         user = slack_event["event"].get("user")
         message = slack_event["event"]
         if ((not "bot_id" in message) and "text" in message and len(message["text"].split()) > 100):
@@ -109,7 +109,7 @@ def _event_handler(event_type, slack_event):
                 "thread_ts": ts,
                 "attachments": json.dumps(attachments)
             }
-            print(data)
+            #print(data)
             r = requests.post("https://slack.com/api/chat.postMessage", data)
             return make_response("respond", 200,)
 
@@ -215,7 +215,7 @@ def interact():
     #print("interact request:")
     #print(urlparse.parse_qs(request.get_data()))
     payload = json.loads(urlparse.parse_qs(request.get_data())[b'payload'][0])
-    print(payload)
+    #print(payload)
     return make_response("",200,)
 
 if __name__ == '__main__':
