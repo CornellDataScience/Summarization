@@ -2,7 +2,7 @@
 import requests
 import json
 from . import bot
-from flask import Flask, request, make_response, render_template, send_file
+from flask import Flask, jsonify, request, make_response, render_template, send_file
 
 pyBot = bot.Bot()
 slack = pyBot.client
@@ -70,12 +70,12 @@ def _event_handler(event_type, slack_event):
             #print(r.text)
             s = summary(message.get("text"), ts)
             data = {
-                'token': "xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m",
+                "token": "xoxb-9179452085-446961855171-u5xGDJOGl3BvR1nJGaBxF56m",
                 "channel": message.get("channel"),
                 "text": "It is better to have a summary...",
                 "as_user": True,
                 "thread_ts": ts,
-                "attachments": [
+                "attachments": json.dumps([
                     {
                         "title": "Keywords",
                         "text": s[0]
@@ -109,8 +109,9 @@ def _event_handler(event_type, slack_event):
                             }
                         ]
                     }
-                ]
+                ])
             }
+            print(data)
             r = requests.post("https://slack.com/api/chat.postMessage", data)
             return make_response("respond", 200,)
 
