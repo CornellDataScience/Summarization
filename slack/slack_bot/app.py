@@ -115,10 +115,6 @@ def _event_handler(event_type, slack_event):
             r = requests.post("https://slack.com/api/chat.postMessage", data)
             return make_response("respond", 200,)
 
-    if event_type == "interactive_message":
-        print(slack_event["actions"])
-        print(slack_event["original_message"])
-
     # ============= Reaction Added Events ============= #
     # If the user has added an emoji reaction to the onboarding message
     #elif event_type == "reaction_added":
@@ -214,8 +210,15 @@ def hears():
 @app.route('/get_image')
 def get_image():
     # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
-    print(request.args.get('ts'))
+    # print(request.args.get('ts'))
     return send_file("placeholder.png", mimetype='image/gif')
+
+@app.route('/interact')
+def interact():
+    # return send_file(request.args.get('ts') + ".png", mimetype='image/gif')
+    print("interact request:")
+    print(request.data)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
