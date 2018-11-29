@@ -9,14 +9,14 @@ import networkx as nx
 def summary(text, ts):
     keywords = get_summary(text)[0]
     summary = get_summary2(text) #change number of sentences?
-    kg = KG()
-    if len(text > 1000):
+    if len(text) > 1000:
+        kg = KG()
         kg.make(text=text)
         nx.draw_networkx(kg.word_graph)
         plt.savefig("kg/" + str(ts)+".png", format="PNG")
         return [", ".join(keywords), summary, str(ts)]
     else:
-        return [", ".join(keywords), summary, ""]
+        return [", ".join(keywords), summary, None]
 
 app.summary = summary
 
