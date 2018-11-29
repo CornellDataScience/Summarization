@@ -16,7 +16,7 @@ def summary(text, ts):
         plt.savefig("kg/" + str(ts)+".png", format="PNG")
         return [", ".join(keywords), summary, str(ts)]
     else:
-        return [", ".join(keywords), summary, None]
+        return [", ".join(keywords), summary, "N/A"]
 
 app.summary = summary
 

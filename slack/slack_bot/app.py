@@ -69,7 +69,8 @@ def _event_handler(event_type, slack_event):
             #}
             #r = requests.post("https://slack.com/api/chat.update", data)
             #print(r.text)
-            s = summary(message.get("text"), ts)
+            text = message.get("text")
+            s = summary(text, ts)
             attachments = [
                     {
                         "title": "Keywords",
@@ -80,29 +81,25 @@ def _event_handler(event_type, slack_event):
                         "text": s[1]
                     }]
 
-            if s[2] != None:
+            if s[2] != "N/A":
                 attachments.append({
                         "title": "Graph",
                         "image_url": "http://128.84.48.178/get_image?ts=" + s[2]
                     })
+            survey_link = "https://docs.google.com/forms/d/e/1FAIpQLSf486Jnksu4NDjk4lQCeA-SQ6SqFFDfCVund-zZr-BovXE8uw/viewform?" \
+            "entry.1518028795="+text+"&" \
+            "entry.429608591="+ s[0] +"&" \
+            "entry.546721641="+s[1]+"&" \
+            "entry.1905016871=" + s[2] + ""
             attachments.append({
-                        "fallback": "Do you like the summary?",
-                        "title": "Do you like the summary?",
-                        "callback_id": "feedback",
+                        "fallback": "Evaluate our summary!",
+                        "title": "Evaluate our summary!",
                         "color": "#3AA3E3",
-                        "attachment_type": "default",
                         "actions": [
                             {
-                                "name": "yes",
-                                "text": "yes",
-                                "type": "button",
-                                "value": "good"
-                            },
-                            {
-                                "name": "no",
-                                "text": "No",
-                                "type": "button",
-                                "value": "bad"
+                                 "type": "button",
+                                 "text": "Evaluate",
+                                 "url": survey_link
                             }
                         ]
                     })
