@@ -124,6 +124,8 @@ class KG:
         self.graph = nx.MultiDiGraph()
         #Stores the final constructed summarized graph
         self.sum_graph = nx.MultiDiGraph()
+        #Stores the visual summary graph 
+        self.word_graph = nx.MultiDiGraph()
         # {entity id: entity object}
         self.entities = {}
         # {entity name: entity ix}
@@ -376,6 +378,23 @@ class KG:
             if triple[0] in self.entities and triple[2] in self.entities:
                 self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
+
+    def construct_wordGraph(self, graph):
+        '''Constructs networkx WORD graph from existing summary networkx graph'''
+        #add each word node to graph
+        for node in graph.nodes:
+            self.word_graph.add_node(self.entities[node].name)
+            print(self.entities[node].name)
+
+        #add each edge
+        for edge in graph.edges:
+            e1 = edge[0]
+            e2 = edge[1]
+            
+            self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name)
+            print("{}, {}".format(self.entities[e1].name, self.entities[e2].name))
+
+
     def add_docs_from_dir(self, dir):
         '''Takes text files from a directory and converts them into spacy
         document objects that population the [doc_dict] attribute'''
@@ -437,17 +456,18 @@ class KG:
         print("calling triple extraction")
         self.triple_extraction()
         print("number of entities now: {}".format(len(kg.entities)))
-        print("#######PRINTING ENTITIES#######")
-
-        for i in self.entities:
-            print(self.entities[i].name)
-            print(self.entities[i].doc_appearances)
-        print("#######PRINTING TRIPLES#######")
-        for tup in self.triples:
-            print(tup)
 
         kg.filter_entities()
         print("filter...number of entities now: {}".format(len(kg.entities)))
+
+        print("#######PRINTING ENTITIES#######")
+        for i in self.entities:
+            print(self.entities[i].name)
+            #print(self.entities[i].doc_appearances)
+        
+        print("#######PRINTING TRIPLES#######")
+        for tup in self.triples:
+            print(tup)
 
         print("making graph......")
         self.construct_graph()
@@ -460,8 +480,16 @@ class KG:
         print("summarized graph has {} nodes and {} edges".format(self.sum_graph.number_of_nodes(),\
                                                        self.sum_graph.number_of_edges()))
         
+        
+
+        print("constructing word graph")
+        self.construct_wordGraph(self.sum_graph)
         plt.figure()
         nx.draw_networkx(kg.sum_graph)
+        plt.show()
+
+        plt.figure()
+        nx.draw_networkx(kg.word_graph)
         plt.show()
 
         #return summary based off of edges
@@ -487,7 +515,7 @@ class KG:
         for s in sum_list:
             summary += (s + " ")
 
-        return self.sum_graph, summary
+        return self.word_graph, summary
 
 
 text = '''The first step in solving any problem is admitting there is one. But a new report from the US Government Accountability Office finds that the Department of Defense remains in denial about cybersecurity threats to its weapons systems.
@@ -507,6 +535,6 @@ kg = KG()
 retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
 graph = retval[0]
 summary = retval[1]
-print(summary)
+print(summary) #this doesn't make any sense
 
 #pickle.dump(kg, open('kg.p', 'wb'))
