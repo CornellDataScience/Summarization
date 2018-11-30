@@ -9,7 +9,7 @@ of the KG construction pipeline and summarization procedure."""
 import pickle
 import networkx as nx
 import matplotlib.pyplot as plt
-
+from main import summary
 
 def unpickle_kg(dir):
     G = nx.read_gpickle(open(dir + 'graph.p', 'rb'))
@@ -30,5 +30,17 @@ def display_graph(dir=''):
     nx.draw_networkx(G)
     plt.show()
 
+def test(test_name):
+    text = ""
+    with open("test/" + test_name+".txt", 'r', encoding='utf-8') as f:
+        text = f.read() 
 
-display_graph('Data/trump_russia/kg/')
+    result = summary(text, test_name)
+    f = open("test/" + test_name+"_result.txt", "w")
+    f.write(result[0]+ "\n")
+    f.write(result[1]+ "\n")
+    f.write(result[2]+ "\n")
+
+if __name__ == '__main__':
+    #display_graph('Data/trump_russia/kg/')
+    test("test1")
