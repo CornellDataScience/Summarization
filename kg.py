@@ -386,13 +386,29 @@ class KG:
             self.word_graph.add_node(self.entities[node].name)
             print(self.entities[node].name)
 
+        print("calling get edge attributes")
+        print(type(nx.get_edge_attributes(graph, "relationship")))
+        edge_attr = nx.get_edge_attributes(graph, "relationship")
+
         #add each edge
-        for edge in graph.edges:
-            e1 = edge[0]
-            e2 = edge[1]
-            
-            self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name)
-            print("{}, {}".format(self.entities[e1].name, self.entities[e2].name))
+        #for edge in graph.edges:
+        for edge, rel in edge_attr.items():
+            try:
+                print(edge)
+                print(rel)
+                e1 = edge[0]
+                e2 = edge[1]
+
+                #rel = edge[1]
+                
+                self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
+                print("{}, {}".format(self.entities[e1].name, self.entities[e2].name))
+
+            except:
+                break
+
+
+                
 
 
     def add_docs_from_dir(self, dir):
@@ -479,7 +495,6 @@ class KG:
 
         print("making graph......")
         self.construct_graph()
-        # nx.draw_networkx(kg.graph)
         print("graph has {} nodes and {} edges".format(self.graph.number_of_nodes(),\
                                                        self.graph.number_of_edges()))
 
@@ -492,14 +507,30 @@ class KG:
 
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph)
-        #plt.figure()
 
-        # nx.draw_networkx(kg.sum_graph)
-        #plt.show()
+        nx.draw_networkx(kg.graph)
+        plt.figure()
 
-        #plt.figure()
-        # nx.draw_networkx(kg.word_graph)
-        # plt.show()
+        nx.draw_networkx(kg.sum_graph)
+        plt.figure()
+
+        pos = nx.spring_layout(kg.word_graph, scale=20)
+        edge_labels = nx.get_edge_attributes(kg.word_graph, 'r')
+        print(edge_labels.items())
+        #nx.draw_networkx(G = kg.word_graph, vmin = 1000, edge_vmin= 1000)
+
+        new_labels = {}
+        for entry in edge_labels.items():
+            tup = (entry[0][0], entry[0][1])
+            rel = entry[1]
+
+            new_labels[tup] = rel
+
+        print(new_labels)
+
+        nx.draw(kg.word_graph, pos, with_labels=True)
+        nx.draw_networkx_edge_labels(G = kg.word_graph, pos = pos, edge_labels = new_labels)
+        plt.figure()
 
         #return summary based off of edges
         sum_list = []
@@ -524,6 +555,7 @@ class KG:
         for s in sum_list:
             summary += (s + " ")
 
+
         return self.word_graph, summary
 
 if __name__ == "__main__":
@@ -542,11 +574,13 @@ if __name__ == "__main__":
     #kg.doc_dict = {1: nlp(text)}
 
     # print("ok")
-    kg.make(text = text)
+    
+    #kg.make(text = text)
 
     retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
     graph = retval[0]
     summary = retval[1]
     print(summary) #this doesn't make any sense
+    plt.show()
 
     #pickle.dump(kg, open('kg.p', 'wb'))
