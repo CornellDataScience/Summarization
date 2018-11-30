@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from spacy import displacy
 from collections import Counter, deque
 from networkx import algorithms as algo
+from networkx.drawing.nx_agraph import graphviz_layout
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 
 nlp = spacy.load('en_coref_md') #
@@ -379,7 +380,7 @@ class KG:
                 self.graph.add_edge(triple[0], triple[2], relationship = triple[1])
 
 
-    def construct_wordGraph(self, graph):
+    def construct_wordGraph(self, graph, edge_words):
         '''Constructs networkx WORD graph from existing summary networkx graph'''
         #add each word node to graph
         for node in graph.nodes:
@@ -391,7 +392,6 @@ class KG:
         edge_attr = nx.get_edge_attributes(graph, "relationship")
 
         #add each edge
-        #for edge in graph.edges:
         for edge, rel in edge_attr.items():
             try:
                 print(edge)
@@ -399,10 +399,9 @@ class KG:
                 e1 = edge[0]
                 e2 = edge[1]
 
-                #rel = edge[1]
                 
-                self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
-                print("{}, {}".format(self.entities[e1].name, self.entities[e2].name))
+                if edge_words: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'].text)
+                else: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
 
             except:
                 break
@@ -452,10 +451,13 @@ class KG:
                             for id, ent in self.entities.items()}
         pickle.dump(entity_strs, open(path+'entities.p', 'wb'))
 
-    def make(self, dir='', text = None):
+    def make(self, edge_words, dir='', text = None):
         '''Runs the whole KG creation process.
         Outputs a pickled representation of the graph, summarized graph, and
         raw text dictionaries of entities and relations.
+
+        edge_words: True if want to output graph edges as words, False if indexes
+
         dir : str - directory containing documents as seperate text files.
                     ex: dir='data/politics/'
         return : networkx MultiDiGraph of summarized KG
@@ -506,7 +508,7 @@ class KG:
         
 
         print("constructing word graph")
-        self.construct_wordGraph(self.sum_graph)
+        self.construct_wordGraph(self.sum_graph, edge_words)
 
         nx.draw_networkx(kg.graph)
         plt.figure()
@@ -514,7 +516,7 @@ class KG:
         nx.draw_networkx(kg.sum_graph)
         plt.figure()
 
-        pos = nx.spring_layout(kg.word_graph, scale=20)
+        pos = nx.spring_layout(G = kg.word_graph, dim = 2, k = 10, scale=20)
         edge_labels = nx.get_edge_attributes(kg.word_graph, 'r')
         print(edge_labels.items())
         #nx.draw_networkx(G = kg.word_graph, vmin = 1000, edge_vmin= 1000)
@@ -532,11 +534,33 @@ class KG:
         nx.draw_networkx_edge_labels(G = kg.word_graph, pos = pos, edge_labels = new_labels)
         plt.figure()
 
-        #return summary based off of edges
+        return self.word_graph, new_labels
+
+
+    def key_string(self, labels):
+        '''
+        return key for mapping entity index to entity name as string
+        to be sent as caption to graph
+        '''
+        retstr = 'Key for edges:\n'
+
+        for tup in labels:
+            idx = labels[tup]
+
+            #print(type(self.relations[idx]['span'].text))
+            try: name = self.relations[idx]['span'].text
+            except: name = "already shown on graph"
+
+            retstr += '{}: "{}"\n'.format(str(idx), name)
+
+        return retstr
+
+    def graph_to_string(self):
+        '''
+        return simple summary of graph 
+        '''
         sum_list = []
         for edge in self.sum_graph.edges:
-
-            print(edge)
 
             e0 = self.entities[edge[0]]
             e1 = self.entities[edge[1]]
@@ -545,7 +569,7 @@ class KG:
                 try:
                     if tup[0] == e0.index and tup[2] == e1.index:
                         sentence = "{} {} {}.".format(self.entities[tup[0]].name,
-                                                      self.entities[tup[1]].name, self.entities[tup[2]].name)
+                                                      self.relations[tup[1]]['span'].text, self.entities[tup[2]].name)
                         sum_list.append(sentence)
 
                 except:
@@ -555,8 +579,8 @@ class KG:
         for s in sum_list:
             summary += (s + " ")
 
+        return summary
 
-        return self.word_graph, summary
 
 if __name__ == "__main__":
 
@@ -577,10 +601,17 @@ if __name__ == "__main__":
     
     #kg.make(text = text)
 
-    retval = kg.make('/Users/Jane/Desktop/School/CDS/Summarization/Data/')
+    retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
     graph = retval[0]
-    summary = retval[1]
-    print(summary) #this doesn't make any sense
+    labels = retval[1]
+
+    legend = kg.key_string(labels)
+    print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS 
+    #print(kg.relations)
     plt.show()
+
+
+    summary = kg.graph_to_string()
+    print("generated graph -> text: {}".format(summary))
 
     #pickle.dump(kg, open('kg.p', 'wb'))
