@@ -20,7 +20,7 @@ from networkx import algorithms as algo
 from networkx.drawing.nx_agraph import graphviz_layout
 from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
 
-nlp = spacy.load('en_coref_md') #
+nlp = spacy.load('en_coref_lg') #
 #nlp = en_core_web_sm.load()
 
 
@@ -125,7 +125,7 @@ class KG:
         self.graph = nx.MultiDiGraph()
         #Stores the final constructed summarized graph
         self.sum_graph = nx.MultiDiGraph()
-        #Stores the visual summary graph 
+        #Stores the visual summary graph
         self.word_graph = nx.MultiDiGraph()
         # {entity id: entity object}
         self.entities = {}
@@ -399,7 +399,7 @@ class KG:
                 e1 = edge[0]
                 e2 = edge[1]
 
-                
+
                 if edge_words: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'].text)
                 else: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
 
@@ -407,7 +407,7 @@ class KG:
                 break
 
 
-                
+
 
 
     def add_docs_from_dir(self, dir):
@@ -490,7 +490,7 @@ class KG:
         for i in self.entities:
             print(self.entities[i].name)
             #print(self.entities[i].doc_appearances)
-        
+
         print("#######PRINTING TRIPLES#######")
         for tup in self.triples:
             print(tup)
@@ -504,20 +504,20 @@ class KG:
         self.sum_graph = cp.greedy_summarize(self.graph, 8, 0.05, self.max_weight * 0.7)
         print("summarized graph has {} nodes and {} edges".format(self.sum_graph.number_of_nodes(),\
                                                        self.sum_graph.number_of_edges()))
-        
-        
+
+
 
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph, edge_words)
 
-        nx.draw_networkx(kg.graph)
+        nx.draw_networkx(self.graph)
         plt.figure()
 
-        nx.draw_networkx(kg.sum_graph)
+        nx.draw_networkx(self.sum_graph)
         plt.figure()
 
-        pos = nx.spring_layout(G = kg.word_graph, dim = 2, k = 10, scale=20)
-        edge_labels = nx.get_edge_attributes(kg.word_graph, 'r')
+        pos = nx.spring_layout(G = self.word_graph, dim = 2, k = 10, scale=20)
+        edge_labels = nx.get_edge_attributes(self.word_graph, 'r')
         print(edge_labels.items())
         #nx.draw_networkx(G = kg.word_graph, vmin = 1000, edge_vmin= 1000)
 
@@ -530,8 +530,8 @@ class KG:
 
         print(new_labels)
 
-        nx.draw(kg.word_graph, pos, with_labels=True)
-        nx.draw_networkx_edge_labels(G = kg.word_graph, pos = pos, edge_labels = new_labels)
+        nx.draw(self.word_graph, pos, with_labels=True)
+        nx.draw_networkx_edge_labels(G = self.word_graph, pos = pos, edge_labels = new_labels)
         plt.figure()
 
         return self.word_graph, new_labels
@@ -557,7 +557,7 @@ class KG:
 
     def graph_to_string(self):
         '''
-        return simple summary of graph 
+        return simple summary of graph
         '''
         sum_list = []
         for edge in self.sum_graph.edges:
@@ -598,7 +598,7 @@ if __name__ == "__main__":
     #kg.doc_dict = {1: nlp(text)}
 
     # print("ok")
-    
+
     #kg.make(text = text)
 
     retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
@@ -606,7 +606,7 @@ if __name__ == "__main__":
     labels = retval[1]
 
     legend = kg.key_string(labels)
-    print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS 
+    print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS
     #print(kg.relations)
     plt.show()
 

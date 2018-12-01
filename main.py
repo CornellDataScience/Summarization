@@ -1,5 +1,5 @@
 import slack.slack_bot
-import slack.slack_bot.app as app 
+import slack.slack_bot.app as app
 from textrank import get_summary
 from textrank2 import get_summary2
 from kg import KG
@@ -14,7 +14,7 @@ def summary(text, ts):
     summary = get_summary2(text, numSentences= num)
     if len(text) > 1000:
         kg = KG()
-        kg.make(text=text)
+        kg.make(edge_words = True, text=text)
         plt.figure()
         nx.draw_networkx(kg.word_graph)
         plt.savefig("kg/" + str(ts)+".png", format="PNG")
@@ -24,6 +24,6 @@ def summary(text, ts):
 
 app.summary = summary
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     app.app.run(debug=True)
 
