@@ -500,20 +500,18 @@ class KG:
         print(type(nx.get_edge_attributes(graph, "relationship")))
         edge_attr = nx.get_edge_attributes(graph, "relationship")
 
+        print(edge_attr.items())
         #add each edge
         for edge, rel in edge_attr.items():
-            try:
-                print(edge)
-                print(rel)
-                e1 = edge[0]
-                e2 = edge[1]
+            e1 = edge[0]
+            e2 = edge[1]
 
+            if edge_words: 
+                self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'])
+            else: 
+                #print("successful 2")
+                self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
 
-                if edge_words: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'].text)
-                else: self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
-
-            except:
-                break
 
 
     def add_docs_from_dir(self, dir):
@@ -677,7 +675,7 @@ class KG:
                 try:
                     if tup[0] == e0.index and tup[2] == e1.index:
                         sentence = "{} {} {}.".format(self.entities[tup[0]].name,
-                                                      self.relations[tup[1]]['span'].text, self.entities[tup[2]].name)
+                                                      self.relations[tup[1]]['span'], self.entities[tup[2]].name)
                         sum_list.append(sentence)
 
                 except:
@@ -716,7 +714,7 @@ if __name__ == "__main__":
 
     legend = kg.key_string(labels)
     print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS
-    #print(kg.relations)
+    print(kg.relations)
     plt.show()
 
 
