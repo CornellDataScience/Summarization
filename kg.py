@@ -545,7 +545,7 @@ class KG:
             pass
         path = kg_dir + '/'
         nx.write_gpickle(self.graph, open(path+'graph.p', 'wb'))
-        #nx.write_gpickle(self.sum_graph, open(path+'sum_graph.p', 'wb'))
+        nx.write_gpickle(nx.MultiDiGraph(self.sum_graph), open(path+'sum_graph.p', 'wb'))
 
         relation_strs = {id : r['span'] for id, r in self.relations.items()}
         pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
@@ -710,7 +710,7 @@ if __name__ == "__main__":
     #kg.make(text = text)
 
     #retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
-    retval = kg.make(edge_words = True, dir ='Data/test/')
+    retval = kg.make(edge_words = True, dir ='Data/trump_russia/')
     graph = retval[0]
     labels = retval[1]
 
