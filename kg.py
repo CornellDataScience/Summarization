@@ -198,6 +198,10 @@ class KG:
                     for i in range(ent.start, ent.end):
                         self.master_token_ix_to_entity[ix][i] = ent_id
                 else:
+                    type = ent.label_
+                    if type == 'DATE' or type == 'TIME' or \
+                        type == 'ORDINAL' or type == 'CARDINAL':
+                        continue
                     #Else create new entity and update KG data fields
                     self.add_new_entity(ix, ent)
 
@@ -309,7 +313,112 @@ class KG:
         self.relation_ixs += 1
         return new_rel_ix
 
+    def sentence_ent_map(self, doc_ix, span):
+        '''Returns numpy array where the value at index i is the entity id
+        of the entity that is at that index in the sentence, -1 else.
+        doc_ix : int - document id
+        span : Spacy.span - the span object of the sentence'''
+        ent_map = np.zeros(span.end-span.start)
+        multi_dict = {}
+        multi_keys = -2
+        for i in range(span.start, span.end):
+            try:
+                ent_map[i - span.start] = self.master_token_ix_to_entity[doc_ix].get(i, -1)
+            except ValueError:
+                ent_map[i - span.start] = multi_keys
+                multi_dict[multi_keys] = self.master_token_ix_to_entity[doc_ix][i]
+                if self.master_token_ix_to_entity[doc_ix].get(i+1, -1) != \
+                                                multi_dict[multi_keys]:
+                    multi_keys -= 1
+        return ent_map, multi_dict
+
+    def get_dep_graph_ent_ixs(self, sent_ent_map, sent):
+        '''Returns the index values of a sentence that should be considered
+        as a source and target for the dependency graph indices.
+        sent_ent_map : np.array - entity map of sentence
+        sent : Spacy.span - span oject of the sentence'''
+        ix_collection = []
+        token_chunks = np.split(sent_ent_map, np.where(np.diff(sent_ent_map))[0]+1)
+        acc_ix = 0
+        for chunk in token_chunks:
+            if chunk[0] == -1:
+                acc_ix += len(chunk)
+                continue
+            elif len(chunk) == 1:
+                ix_collection.append(acc_ix)
+                acc_ix += 1
+            else:
+                ent_slice = sent[acc_ix: acc_ix+len(chunk)]
+                ent_root_ix = ent_slice.root.i - sent.start
+                ix_collection.append(ent_root_ix)
+                acc_ix += len(chunk)
+        return ix_collection
+
+    def construct_dependency_graph(self, sent):
+        edges = []
+        for tok in sent:
+            for child in tok.children:
+                edges.append((tok.i-sent.start, child.i-sent.start))
+        return nx.Graph(edges)
+
+    def extract_relations(self, dep_graph, node_ixs):
+        rels = {}
+        ix_set = set(node_ixs)
+        for ix, src in enumerate(node_ixs[:-1]):
+            #for trg in node_ixs[ix+1:]:
+            trg = node_ixs[ix+1]
+            dep_path = nx.shortest_path(dep_graph, source=src, target=trg)
+            if any(True for link in dep_path[1:-1] if link in ix_set):
+                #print(dep_path[1:-1])
+                continue
+            if len(dep_path) > 2:
+                rels[(src, trg)] = dep_path[1:-1]
+        return rels
+
+    def get_triples(self, ents, rel, multi_ent_dict):
+        ent1, ent2 = ents
+        trips = []
+        if ent1 > -1 and ent2 > -1:
+            return [(ent1, rel, ent2)]
+        elif ent1 < -1 and ent2 > -1:
+            ent1_list = multi_ent_dict[ent1]
+            for e_1 in ent1_list:
+                trips.append((e_1, rel, ent2))
+        elif ent1 > -1 and ent2 < -1:
+            ent2_list = multi_ent_dict[ent2]
+            for e_2 in ent2_list:
+                trips.append((ent1, rel, e_2))
+        else:
+            ent1_list = multi_ent_dict[ent1]
+            ent2_list = multi_ent_dict[ent2]
+            for e_1 in ent1_list:
+                for e_2 in ent2_list:
+                    trips.append((e_1, rel, ent2))
+        return trips
+
+
     def triple_extraction(self):
+        for doc_ix, doc in self.doc_dict.items():
+            for s in doc.sents:
+                ent_map, multi_ent_dict = self.sentence_ent_map(doc_ix, s)
+                node_ixs = self.get_dep_graph_ent_ixs(ent_map, s)
+                #print(node_ixs)
+                if len(node_ixs) < 2:
+                    continue
+                dep_graph = self.construct_dependency_graph(s)
+                rels = self.extract_relations(dep_graph, node_ixs)
+                rel_strs = {}
+                for k, link_path in rels.items():
+                    rel_strs[k] = (' '.join([s[link].text for link in link_path]))
+
+                for ents, rel in rel_strs.items():
+                    rel_id = self.create_new_relation(doc_ix, rel)
+                    new_triples = self.get_triples(ents, rel_id, multi_ent_dict)
+                    for trip in new_triples:
+                        self.triples.add(trip)
+
+
+    def triple_extraction_old(self):
         '''
         extracts triple relationships in text,
         stored as 3-tuples in self.triples
@@ -407,9 +516,6 @@ class KG:
                 break
 
 
-
-
-
     def add_docs_from_dir(self, dir):
         '''Takes text files from a directory and converts them into spacy
         document objects that population the [doc_dict] attribute'''
@@ -441,7 +547,7 @@ class KG:
         nx.write_gpickle(self.graph, open(path+'graph.p', 'wb'))
         #nx.write_gpickle(self.sum_graph, open(path+'sum_graph.p', 'wb'))
 
-        relation_strs = {id : r['span'].text for id, r in self.relations.items()}
+        relation_strs = {id : r['span'] for id, r in self.relations.items()}
         pickle.dump(relation_strs, open(path+'relations.p', 'wb'))
 
         #TODO: use median length alias, problem with NoneTypes
@@ -479,12 +585,14 @@ class KG:
         self.condense_entities()
         print("number of entities now: {}".format(len(self.entities)))
 
+        self.filter_entities()
+        print("filter...number of entities now: {}".format(len(self.entities)))
+
         print("calling triple extraction")
         self.triple_extraction()
         print("number of entities now: {}".format(len(self.entities)))
 
-        self.filter_entities()
-        print("filter...number of entities now: {}".format(len(self.entities)))
+
 
         print("#######PRINTING ENTITIES#######")
         for i in self.entities:
@@ -506,7 +614,7 @@ class KG:
                                                        self.sum_graph.number_of_edges()))
 
 
-
+        self.pickle_kg(dir)
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph, edge_words)
 
@@ -548,7 +656,7 @@ class KG:
             idx = labels[tup]
 
             #print(type(self.relations[idx]['span'].text))
-            try: name = self.relations[idx]['span'].text
+            try: name = self.relations[idx]['span']
             except: name = "already shown on graph"
 
             retstr += '{}: "{}"\n'.format(str(idx), name)
@@ -591,7 +699,7 @@ if __name__ == "__main__":
     “I will say that the GAO can be prone to cyber hyperbole, but unless their sampling or methodology were way off or deliberately misleading, DoD has a very grave problem on its hands,” says R. David Edelman, who served as special assistant to former President Barack Obama on cybersecurity and tech policy. “In the private sector, this is the sort of report that would put the CEO on death watch.”
     DoD testers found significant vulnerabilities in the department’s weapon systems, some of which began with poor basic password security or lack of encryption. As previous hacks of government systems, like the breach at the Office of Personnel Management or the breach of the DoD’s unclassified email server, have taught us, poor basic security hygiene can be the downfall of otherwise complex systems.'''
 
-    print("ok")
+    #print("ok")
 
     #text = text.replace('\n', ' ')
     kg = KG()
@@ -601,7 +709,8 @@ if __name__ == "__main__":
 
     #kg.make(text = text)
 
-    retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
+    #retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
+    retval = kg.make(edge_words = True, dir ='Data/test/')
     graph = retval[0]
     labels = retval[1]
 
