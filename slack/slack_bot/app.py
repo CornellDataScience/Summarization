@@ -88,6 +88,7 @@ def _event_handler(event_type, slack_event):
                         "image_url": "http://128.84.48.178/get_image?ts=" + s[2]
                     })
             survey_link = "https://docs.google.com/forms/d/e/1FAIpQLSf486Jnksu4NDjk4lQCeA-SQ6SqFFDfCVund-zZr-BovXE8uw/viewform?usp=sf_link" 
+            test_link = "https://docs.google.com/forms/d/e/1FAIpQLSfMdKpiYE41jKlKobnG842KwZvZzvt42b4sJRQyRLrtRT0gDg/viewform?usp=sf_link"
             attachments.append({
                         "fallback": "Evaluate our summary!",
                         "title": "Evaluate our summary!",
@@ -95,9 +96,14 @@ def _event_handler(event_type, slack_event):
                         "actions": [
                             {
                                  "type": "button",
-                                 "text": "Evaluate",
+                                 "text": "Give Feedback",
                                  "url": survey_link
-                            }
+                            },
+                            {
+                                 "type": "button",
+                                 "text": "Evaluate test cases",
+                                 "url": test_link
+                            } 
                         ]
                     })
 
