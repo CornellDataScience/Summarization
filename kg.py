@@ -18,7 +18,7 @@ from spacy import displacy
 from collections import Counter, deque
 from networkx import algorithms as algo
 from networkx.drawing.nx_agraph import graphviz_layout
-from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP
+from spacy.attrs import LEMMA, LIKE_NUM , IS_STOP, IS_PUNCT
 
 nlp = spacy.load('en_coref_lg') #
 #nlp = en_core_web_sm.load()
@@ -60,11 +60,11 @@ def caps_abrev(caps_o, full):
 def can_merge_span(span1, span2):
     # All strings mapped to integers, for easy export to numpy
 
-    np_array1 = span1.to_array([LEMMA, LIKE_NUM, IS_STOP])
-    np_array1 = np.apply_along_axis(lambda x:  x[0] if x[1] or not x[2] else -1 , 1,np_array1 )
+    np_array1 = span1.to_array([LEMMA, LIKE_NUM, IS_STOP, IS_PUNCT])
+    np_array1 = np.apply_along_axis(lambda x:  x[0] if (x[1] or not x[2]) and not x[3] else -1 , 1,np_array1 )
 
     np_array2 = span2.to_array([LEMMA, LIKE_NUM, IS_STOP])
-    np_array2 = np.apply_along_axis(lambda x: x[0] if x[1] or not x[2] else -1,
+    np_array2 = np.apply_along_axis(lambda x: x[0] if (x[1] or not x[2]) and not x[3] else -1,
                                     1, np_array2)
     if np.all(np_array1 == -1) or np.all(np_array2 == -1):
         #print(span1)
