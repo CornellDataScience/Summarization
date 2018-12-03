@@ -525,7 +525,8 @@ class KG:
             e2 = edge[1]
 
             if edge_words:
-                self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'])
+                if e1 != e2:
+                    self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'])
             else:
                 #print("successful 2")
                 self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
