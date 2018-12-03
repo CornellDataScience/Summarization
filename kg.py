@@ -67,9 +67,9 @@ def can_merge_span(span1, span2):
     np_array2 = np.apply_along_axis(lambda x: x[0] if x[1] or not x[2] else -1,
                                     1, np_array2)
     if np.all(np_array1 == -1) or np.all(np_array2 == -1):
-        print(span1)
-        print(span2)
-        print("not possible to merge")
+        #print(span1)
+        #print(span2)
+        #print("not possible to merge")
         return False
 
     score = np.intersect1d(np_array1, np_array2).size / np.union1d(np_array1, np_array2).size
@@ -112,7 +112,7 @@ class Entity:
     def merge(self, other_ent):
         '''Updates the entity to contain the aliases and appearences of another entity
         object representing that same underlying entity.'''
-        print(self.name + " merge with " + other_ent.name )
+        #print(self.name + " merge with " + other_ent.name )
         self.aliases = self.aliases.union(other_ent.aliases)
         self.doc_appearances.union(other_ent.doc_appearances)
 
@@ -361,7 +361,7 @@ class KG:
                 edges.append((tok.i-sent.start, child.i-sent.start))
         return nx.Graph(edges)
 
-    def extract_relations(self, dep_graph, node_ixs):
+    def extract_relations(self, dep_graph, node_ixs, ent_map):
         rels = {}
         ix_set = set(node_ixs)
         for ix, src in enumerate(node_ixs[:-1]):
@@ -372,7 +372,7 @@ class KG:
                 #print(dep_path[1:-1])
                 continue
             if len(dep_path) > 2:
-                rels[(src, trg)] = dep_path[1:-1]
+                rels[(ent_map[src], ent_map[trg])] = dep_path[1:-1]
         return rels
 
     def get_triples(self, ents, rel, multi_ent_dict):
@@ -394,8 +394,22 @@ class KG:
             for e_1 in ent1_list:
                 for e_2 in ent2_list:
                     trips.append((e_1, rel, ent2))
+        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+        print(trips)
         return trips
 
+    def remove_trip_dups(self):
+        no_dup_trips_str = set()
+        no_dup_trips_ixs = set()
+        for s,v,o in self.triples:
+            old_len = len(no_dup_trips_str)
+            #print('this work')
+            no_dup_trips_str.add((self.entities[s].name,
+                                self.relations[v]['span'],
+                                self.entities[o].name))
+            if old_len != len(no_dup_trips_str):
+                no_dup_trips_ixs.add((s,v,o))
+        self.triples = no_dup_trips_ixs
 
     def triple_extraction(self):
         for doc_ix, doc in self.doc_dict.items():
@@ -406,7 +420,7 @@ class KG:
                 if len(node_ixs) < 2:
                     continue
                 dep_graph = self.construct_dependency_graph(s)
-                rels = self.extract_relations(dep_graph, node_ixs)
+                rels = self.extract_relations(dep_graph, node_ixs, ent_map)
                 rel_strs = {}
                 for k, link_path in rels.items():
                     rel_strs[k] = (' '.join([s[link].text for link in link_path]))
@@ -416,6 +430,10 @@ class KG:
                     new_triples = self.get_triples(ents, rel_id, multi_ent_dict)
                     for trip in new_triples:
                         self.triples.add(trip)
+        print(self.triples)
+        print('Old length:', len(self.triples))
+        #self.remove_trip_dups()
+        print('New length:', len(self.triples))
 
 
     def triple_extraction_old(self):
@@ -494,21 +512,21 @@ class KG:
         #add each word node to graph
         for node in graph.nodes:
             self.word_graph.add_node(self.entities[node].name)
-            print(self.entities[node].name)
+            #print(self.entities[node].name)
 
-        print("calling get edge attributes")
-        print(type(nx.get_edge_attributes(graph, "relationship")))
+        #print("calling get edge attributes")
+        #print(type(nx.get_edge_attributes(graph, "relationship")))
         edge_attr = nx.get_edge_attributes(graph, "relationship")
 
-        print(edge_attr.items())
+        #print(edge_attr.items())
         #add each edge
         for edge, rel in edge_attr.items():
             e1 = edge[0]
             e2 = edge[1]
 
-            if edge_words: 
+            if edge_words:
                 self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = self.relations[rel]['span'])
-            else: 
+            else:
                 #print("successful 2")
                 self.word_graph.add_edge(self.entities[e1].name, self.entities[e2].name, r = rel)
 
@@ -593,13 +611,13 @@ class KG:
 
 
         print("#######PRINTING ENTITIES#######")
-        for i in self.entities:
-            print(self.entities[i].name)
+        #for i in self.entities:
+            #print(self.entities[i].name)
             #print(self.entities[i].doc_appearances)
 
         print("#######PRINTING TRIPLES#######")
-        for tup in self.triples:
-            print(tup)
+        #for tup in self.triples:
+            #print(tup)
 
         print("making graph......")
         self.construct_graph()
@@ -624,7 +642,7 @@ class KG:
 
         pos = nx.spring_layout(G = self.word_graph, dim = 2, k = 10, scale=20)
         edge_labels = nx.get_edge_attributes(self.word_graph, 'r')
-        print(edge_labels.items())
+        #print(edge_labels.items())
         #nx.draw_networkx(G = kg.word_graph, vmin = 1000, edge_vmin= 1000)
 
         new_labels = {}
@@ -634,7 +652,7 @@ class KG:
 
             new_labels[tup] = rel
 
-        print(new_labels)
+        #print(new_labels)
 
         nx.draw(self.word_graph, pos, with_labels=True)
         nx.draw_networkx_edge_labels(G = self.word_graph, pos = pos, edge_labels = new_labels)
@@ -675,7 +693,8 @@ class KG:
                 try:
                     if tup[0] == e0.index and tup[2] == e1.index:
                         sentence = "{} {} {}.".format(self.entities[tup[0]].name,
-                                                      self.relations[tup[1]]['span'], self.entities[tup[2]].name)
+                                                      self.relations[tup[1]]['span'],
+                                                       self.entities[tup[2]].name)
                         sum_list.append(sentence)
 
                 except:
@@ -708,13 +727,13 @@ if __name__ == "__main__":
     #kg.make(text = text)
 
     #retval = kg.make(edge_words = True, dir = '/Users/Jane/Desktop/School/CDS/Summarization/Data/')
-    retval = kg.make(edge_words = True, dir ='Data/trump_russia/')
+    retval = kg.make(edge_words = True, dir ='Data/test/')
     graph = retval[0]
     labels = retval[1]
 
     legend = kg.key_string(labels)
-    print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS
-    print(kg.relations)
+    #print(legend) #USE IF EDGES ARE INDEXES, NOT WORDS
+    #print(kg.relations)
     plt.show()
 
 
