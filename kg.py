@@ -63,7 +63,7 @@ def can_merge_span(span1, span2):
     np_array1 = span1.to_array([LEMMA, LIKE_NUM, IS_STOP, IS_PUNCT])
     np_array1 = np.apply_along_axis(lambda x:  x[0] if (x[1] or not x[2]) and not x[3] else -1 , 1,np_array1 )
 
-    np_array2 = span2.to_array([LEMMA, LIKE_NUM, IS_STOP])
+    np_array2 = span2.to_array([LEMMA, LIKE_NUM, IS_STOP, IS_PUNCT])
     np_array2 = np.apply_along_axis(lambda x: x[0] if (x[1] or not x[2]) and not x[3] else -1,
                                     1, np_array2)
     if np.all(np_array1 == -1) or np.all(np_array2 == -1):
