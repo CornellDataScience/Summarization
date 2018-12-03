@@ -634,11 +634,12 @@ class KG:
         print("constructing word graph")
         self.construct_wordGraph(self.sum_graph, edge_words)
 
-        nx.draw_networkx(self.graph)
-        plt.figure()
+        # plt.figure()
+        # nx.draw_networkx(self.graph)
+        #
+        # plt.figure()
+        # nx.draw_networkx(self.sum_graph)
 
-        nx.draw_networkx(self.sum_graph)
-        plt.figure()
 
         pos = nx.spring_layout(G = self.word_graph, dim = 2, k = 10, scale=20)
         edge_labels = nx.get_edge_attributes(self.word_graph, 'r')
@@ -653,10 +654,10 @@ class KG:
             new_labels[tup] = rel
 
         #print(new_labels)
-
+        plt.figure()
         nx.draw(self.word_graph, pos, with_labels=True)
         nx.draw_networkx_edge_labels(G = self.word_graph, pos = pos, edge_labels = new_labels)
-        plt.figure()
+
 
         return self.word_graph, new_labels
 

@@ -15,8 +15,6 @@ def summary(text, ts):
     if len(text) > 1000:
         kg = KG()
         kg.make(edge_words = True, text=text)
-        plt.figure()
-        nx.draw_networkx(kg.word_graph)
         plt.savefig("kg/" + str(ts)+".png", format="PNG")
         return [", ".join(keywords), summary, str(ts)]
     else:
