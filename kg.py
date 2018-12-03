@@ -393,7 +393,7 @@ class KG:
             ent2_list = multi_ent_dict[ent2]
             for e_1 in ent1_list:
                 for e_2 in ent2_list:
-                    trips.append((e_1, rel, ent2))
+                    trips.append((e_1, rel, e_2))
         print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
         print(trips)
         return trips
@@ -543,11 +543,11 @@ class KG:
                 continue
             with open(dir + doc, 'r', encoding='utf-8') as f:
                 text = f.read()
-                spacy_text = nlp(text)
+                spacy_text = nlp(text.replace('\n', ' ').replace('\r', ''))
                 self.doc_dict[ix] = spacy_text
 
     def add_docs_from_text(self, text):
-        spacy_text = nlp(text)
+        spacy_text = nlp(text.replace('\n', ' ').replace('\r', ''))
         self.doc_dict[0] = spacy_text
 
     def pickle_kg(self, dir):
