@@ -22,7 +22,7 @@ requests==2.20.0
 six==1.10.0
 SQLAlchemy==1.1.14
 termcolor==1.1.0
-urllib3==1.22
+urllib3==1.26.5
 Werkzeug==0.14
 simplejson==3.13.2
 gunicorn >= 19.5.0
